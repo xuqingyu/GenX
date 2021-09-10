@@ -32,10 +32,6 @@ function fleccs2(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 	FLECCS_ALL = inputs["FLECCS_ALL"] # set of Fleccs generator
 	gen_ccs = inputs["dfGen_ccs"] # fleccs general data
 	FLECCS_parameters = inputs["FLECCS_parameters"] # fleccs specific parameters
-	# get number of flexible subcompoents
-	N_F = inputs["N_F"]
- 
-
 
 	NEW_CAP_ccs = inputs["NEW_CAP_fleccs"] #allow for new capcity build
 	RET_CAP_ccs = inputs["RET_CAP_fleccs"] #allow for retirement
@@ -124,71 +120,32 @@ function fleccs2(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
 
 
-
-
-	# the order of those variables must follow the order of subcomponents in the "Fleccs_data.csv"
-	# 1. gas turbine
-	# 2. steam turbine 
-	# 3. ABSORBER
-	# 4. compressor
-	# 5. regenerator
-	# 6. Rich tank
-	# 7. lean tank
-	# 8. BOP
-
-	# get the ID of each subcompoents 
-	# gas turbine 
-	NGCT_id = gen_ccs[(gen_ccs[!,:TURBINE].==1),:FLECCS_NO][1]
-	# steam turbine
-	NGST_id = gen_ccs[(gen_ccs[!,:TURBINE].==2),:FLECCS_NO][1]
-	# absorber 
-	Absorber_id = gen_ccs[(gen_ccs[!,:ABSORBER].==1),:FLECCS_NO][1]
-	# regenerator 
-	Regen_id = gen_ccs[(gen_ccs[!,:REGEN].==1),:FLECCS_NO][1]
-	# compressor
-	Comp_id = gen_ccs[(gen_ccs[!,:COMPRESSOR].==1),:FLECCS_NO][1]
-	#Rich tank
-	Rich_id = gen_ccs[(gen_ccs[!,:SOLVENT].==1),:FLECCS_NO][1]
-	#lean tank
-	Lean_id = gen_ccs[(gen_ccs[!,:SOLVENT].==2),:FLECCS_NO][1]
-	#BOP 
-	BOP_id = gen_ccs[(gen_ccs[!,:BOP].==1),:FLECCS_NO][1]
-
-
-	
-    # constraints
-	@constraint(EP, cMaxCapture_rate[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] <= eCO2_flue[y,t]*FLECCS_parameters[!,:pCO2CapRate][y])
     #Maximum capacity constraints
 	# Maximum power generated for combustion TURBINE at hour "t"
-	@constraint(EP, cMaxGeneration_gt[y in FLECCS_ALL,t=1:T], vP_gt[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== NGCT_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1] + EP[:vCAP_fleccs][y,NGCT_id] - EP[:vRETCAP_fleccs][y,NGCT_id])
+	@constraint(EP, cMaxGeneration_gt[y in FLECCS_ALL,t=1:T], vP_gt[y,t] <= gen_ccs[(gen_ccs[!,:TURBINE].==1).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1] + EP[:vCAP_gt][y] - EP[:vRETCAP_gt][y])
     # Maximum power generated for steam TURBINE at hour "t"
-    @constraint(EP, cMaxGeneration_st[y in FLECCS_ALL,t=1:T], ePower_st[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== NGST_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]+ EP[:vCAP_fleccs][y,NGST_id] - EP[:vRETCAP_fleccs][y,NGST_id])
+    @constraint(EP, cMaxGeneration_st[y in FLECCS_ALL,t=1:T], ePower_st[y,t] <= gen_ccs[(gen_ccs[!,:TURBINE].==2).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]+ EP[:vCAP_st][y] - EP[:vRETCAP_st][y])
     #Power used for compressing CO2 should be less the compressor capacity
-    @constraint(EP, cMaxGeneration_comp[y in FLECCS_ALL,t=1:T], ePower_use_comp[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== Comp_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]+ EP[:vCAP_fleccs][y,Comp_id] - EP[:vRETCAP_fleccs][y,Comp_id])
+    @constraint(EP, cMaxGeneration_comp[y in FLECCS_ALL,t=1:T], ePower_use_comp[y,t] <= gen_ccs[(gen_ccs[!,:COMPRESSOR].==1).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]+ EP[:vCAP_compressor][y] - EP[:vRETCAP_compressor][y])
+
+	@constraint(EP, cMaxCapture_rate[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] <= eCO2_flue[y,t]*FLECCS_parameters[!,:pCO2CapRate][y])
+
     # Maximum captured CO2  from adsorber at time t should be less than the capacity of capture unit [tonne CO2]
-    @constraint(EP, cMaxCapture[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== Absorber_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1] + EP[:vCAP_fleccs][y,Absorber_id] - EP[:vRETCAP_fleccs][y,Absorber_id] )
+    @constraint(EP, cMaxCapture[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] <= gen_ccs[(gen_ccs[!,:ABSORBER].==1).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1] + EP[:vCAP_capture][y] - EP[:vRETCAP_capture][y] )
     # Maximum Regenerated CO2  from regenerator at time t [tonne CO2]
-    @constraint(EP, cMaxRegeneration[y in FLECCS_ALL,t=1:T], vREGEN[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== Regen_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]  + EP[:vCAP_fleccs][y,Regen_id] - EP[:vRETCAP_fleccs][y,Regen_id])
-    # mass of stored solvents at any time must be non-negative and less than the capacity [tonne solvent/sorbent]
-    @constraint(EP, cMaxStored_rich[y in FLECCS_ALL,t=1:T], vSTORE_rich[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== Rich_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]  + EP[:vCAP_fleccs][y,Rich_id] - EP[:vRETCAP_fleccs][y,Rich_id])
-	# mass of stored solvents at any time must be non-negative and less than the capacity [tonne solvent/sorbent]
-    @constraint(EP, cMaxStored_lean[y in FLECCS_ALL,t=1:T], vSTORE_lean[y,t] <= gen_ccs[(gen_ccs[!,:FLECCS_NO].== Lean_id).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]  + EP[:vCAP_fleccs][y,Lean_id] - EP[:vRETCAP_fleccs][y,Lean_id])
+    @constraint(EP, cMaxRegeneration[y in FLECCS_ALL,t=1:T], vREGEN[y,t] <= gen_ccs[(gen_ccs[!,:REGEN].==1).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]  + EP[:vCAP_regen][y] - EP[:vRETCAP_regen][y])
+   # mass of stored solvents at any time must be non-negative and less than the capacity [tonne solvent/sorbent]
+    @constraint(EP, cMaxStored_rich[y in FLECCS_ALL,t=1:T], vSTORE_rich[y,t] <= gen_ccs[(gen_ccs[!,:SOLVENT].==1).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1]  + EP[:vCAP_rich][y] - EP[:vRETCAP_rich][y])
+	  # mass of stored solvents at any time must be non-negative and less than the capacity [tonne solvent/sorbent]
+    @constraint(EP, cMaxStored_lean[y in FLECCS_ALL,t=1:T], vSTORE_lean[y,t] <= gen_ccs[(gen_ccs[!,:SOLVENT].==2).& (gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][1] + EP[:vCAP_lean][y] - EP[:vRETCAP_lean][y])
 
-
-	# BOP capacity = gas turbine + steam turbine 
-	@constraint(EP, cBOP_NEW[y in FLECCS_ALL], EP[:vCAP_fleccs][y, BOP_id] == EP[:vCAP_fleccs][y, NGCT_id]+ EP[:vCAP_fleccs][y,NGST_id] )
-
-	@constraint(EP, cBOP_RET[y in FLECCS_ALL] ,EP[:vRETCAP_fleccs][y, BOP_id] ==  EP[:vRETCAP_fleccs][y, NGCT_id]+ EP[:vRETCAP_fleccs][y,NGST_id] )
 	## Power Balance##
 	EP[:ePowerBalance] += ePowerBalanceFleccs
-
-
-
-
 
 	###########variable cost
 	#fuel
 	@expression(EP, eCVar_fuel[y in FLECCS_ALL, t = 1:T],(inputs["omega"][t]*fuel_costs[fuel_type[1]][t]*eFuel[y,t]))
+
 	# CO2 price applied to vented CO2
 	@expression(EP, eCVar_CO2[y in FLECCS_ALL, t = 1:T],(inputs["omega"][t]*eCO2_vent[y,t]*CostCO2))
 	
@@ -198,23 +155,24 @@ function fleccs2(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
 	# start variable O&M
 	# variable O&M for all the teams: combustion turbine (or oxfuel power cycle)
-	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGCT_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
+	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:TURBINE].==1) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
+
 	# variable O&M for NGCC-based teams: VOM of steam turbine and co2 compressor
 	# variable O&M for steam turbine
-	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGST_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
+	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:TURBINE].==2) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
 	 # variable O&M for compressor
-	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Comp_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
+	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:COMPRESSOR].==1) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
 
 
 	# specfic variable O&M formulations for each team
 	# variable O&M for rich solvent storage
-	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Rich_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_rich[y,t]))
+	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:SOLVENT].==1) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_rich[y,t]))
 	# variable O&M for lean solvent storage
-	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Lean_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_lean[y,t]))
+	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:SOLVENT].==2) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_lean[y,t]))
 	# variable O&M for adsorber
-	@expression(EP,eCVar_absorber[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Absorber_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
+	@expression(EP,eCVar_absorber[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:ABSORBER].==1) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
 	# variable O&M for regenerator
-	@expression(EP,eCVar_regen[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Regen_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vREGEN[y,t]))
+	@expression(EP,eCVar_regen[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:REGEN].==1) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vREGEN[y,t]))
 
 
 	#adding up variable cost
