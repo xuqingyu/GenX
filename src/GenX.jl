@@ -170,6 +170,8 @@ include("write_outputs/ucommit/write_commit.jl")
 include("write_outputs/ucommit/write_shutdown.jl")
 include("write_outputs/ucommit/write_start.jl")
 
+include("write_outputs/fleccs/write_capacity_fleccs.jl")
+
 include("write_outputs/write_outputs.jl")
 
 #Just for unit testing; Under active development

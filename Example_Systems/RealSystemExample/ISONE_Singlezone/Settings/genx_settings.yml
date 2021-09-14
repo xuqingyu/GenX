@@ -20,5 +20,5 @@ TimeDomainReduction: 0 # Time domain reduce (i.e. cluster) inputs based on Load_
 ModelingToGenerateAlternatives: 0 # Modeling to generate alternatives; 0 = not active; 1 = active. Note: produces a single solution as output
 ModelingtoGenerateAlternativeSlack: 0.1 # Slack value as a fraction of least-cost objective in budget constraint used for evaluating alternative model solutions; positive float value
 PieceWiseHeatRate: 0 #piecewise -linear fit of thermal input, 1 = 0, 0 = off
-CostCO2: 100 # CO2 price, $/tonne.
+CostCO2: 150 # CO2 price, $/tonne.
 FLECCS: 2 # 0 = not active;  FLECCS = 1 conventional, FLECCS = 2 solvent storage

@@ -29,7 +29,7 @@ This module additionally defines contributions to the objective function from va
 ```
 
 """
-function discharge(EP::Model, inputs::Dict, PieceWiseHeatRate::Int, CostCO2::Int)
+function discharge(EP::Model, inputs::Dict, PieceWiseHeatRate::Int)
 
 	println("Discharge Module")
 
@@ -57,7 +57,7 @@ function discharge(EP::Model, inputs::Dict, PieceWiseHeatRate::Int, CostCO2::Int
 	# CO2 emissions from generators in the generator_data.csv
 	@expression(EP,eCO2_emissions[y=1:G,t = 1:T],vP[y,t]*inputs["dfGen"][!,:CO2_per_MWh][y])
 	# mutiplying the CO2 emissions and CO2 cost
-	@expression(EP,eCCO2_out[y=1:G,t=1:T], eCO2_emissions[y,t]*CostCO2)
+	@expression(EP,eCCO2_out[y=1:G,t=1:T], eCO2_emissions[y,t]*inputs["CostCO2"])
 	# Sum the CO2 emissions cost
 	@expression(EP,eTotalCCO2T[t=1:T], sum(eCCO2_out[y,t] for y in 1:G))
 	@expression(EP,eTotalCCO2, sum(eTotalCCO2T[t] for t in 1:T))

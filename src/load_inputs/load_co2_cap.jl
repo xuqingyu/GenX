@@ -30,6 +30,9 @@ function load_co2_cap(setup::Dict, path::AbstractString, sep::AbstractString, in
 	inputs_co2["dfCO2CapZones"] = Matrix{Float64}(inputs_co2["dfCO2Cap"][:,first_col:last_col])
 	inputs_co2["NCO2Cap"] = cap
 
+
+
+
 	# Emission limits
 	if setup["CO2Cap"]==1
 		#  CO2 emissions cap in mass

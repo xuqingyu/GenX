@@ -59,6 +59,15 @@ function load_generators_data(setup::Dict, path::AbstractString, sep::AbstractSt
 	# Set of controllable variable renewable resources
 	inputs_gen["VRE"] = gen_in[gen_in.VRE.>=1,:R_ID]
 
+	# scale CO2 cost [the defacult unit is in $/tonne]
+
+	if setup["ParameterScale"] == 1
+		inputs_gen["CostCO2"] = setup["CostCO2"]/ModelScalingFactor
+	else
+		inputs_gen["CostCO2"] = setup["CostCO2"]
+	end
+	
+
 	# Set of thermal generator resources
 	if setup["UCommit"]>=1
 		# Set of thermal resources eligible for unit committment

@@ -19,13 +19,13 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 
 Function for writing the diferent capacities for the FLECCS technologies (starting capacities or, existing capacities, retired capacities, and new-built capacities).
 """
-function write_capacity(path::AbstractString, sep::AbstractString, inputs::Dict, setup::Dict, EP::Model)
+function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 	# Capacity decisions
 	gen_ccs = inputs["dfGen_ccs"]
 	FLECCS_ALL = inputs["FLECCS_ALL"]
 	N_F = inputs["N_F"]
 	# the number of rows for fleccs generator 
-	n = length(gen_ccs[!,"Resource"])/length(N_F)
+	#n = length(gen_ccs[!,"Resource"])/length(N_F)
 
     # the number of subcompoents 
 	N = length(N_F)
@@ -83,10 +83,10 @@ function write_capacity(path::AbstractString, sep::AbstractString, inputs::Dict,
 		EndCap = EndCapfleccs,
 	)
 	if setup["ParameterScale"] ==1
-		dfCapFleccs.StartCap = dfCap.StartCap * ModelScalingFactor
-		dfCapFleccs.RetCap = dfCap.RetCap * ModelScalingFactor
-		dfCapFleccs.NewCap = dfCap.NewCap * ModelScalingFactor
-		dfCapFleccs.EndCap = dfCap.EndCap * ModelScalingFactor
+		dfCapFleccs.StartCap = dfCapFleccs.StartCap * ModelScalingFactor
+		dfCapFleccs.RetCap = dfCapFleccs.RetCap * ModelScalingFactor
+		dfCapFleccs.NewCap = dfCapFleccs.NewCap * ModelScalingFactor
+		dfCapFleccs.EndCap = dfCapFleccs.EndCap * ModelScalingFactor
 	end
 
 	total = DataFrame(

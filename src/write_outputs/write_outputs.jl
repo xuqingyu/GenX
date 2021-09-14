@@ -102,6 +102,10 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
 		end
 	end
 
+	if setup["FLECCS"] >= 1
+		write_capacity_fleccs(path, sep, inputs, setup, EP)
+	end
+
 
 	# Output additional variables related inter-period energy transfer via storage
 	if setup["OperationWrapping"] == 1 && setup["LongDurationStorage"] == 1

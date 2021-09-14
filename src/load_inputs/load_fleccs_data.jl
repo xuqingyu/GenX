@@ -29,7 +29,7 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 		inputs_ccs["FLECCS_ALL"] = unique(gen_ccs[!,:R_ID])
 	elseif setup["FLECCS"] == 2
 		gen_ccs = DataFrame(CSV.File(string(path,sep,"Fleccs_data2.csv"), header=true), copycols=true)
-		inputs_ccs["FLECCS_parameters"] = DataFrame(CSV.File(string(path,sep,"Fleccs_data2_process_parameters.csv"), header=true), copycols=true)
+		FLECCS_parameters = DataFrame(CSV.File(string(path,sep,"Fleccs_data2_process_parameters.csv"), header=true), copycols=true)
 		inputs_ccs["G_F"] = unique(gen_ccs[!,:R_ID])[1]
 		inputs_ccs["n_F"] =nrow(gen_ccs)
 		inputs_ccs["N_F"] = unique(gen_ccs[!,:FLECCS_NO])
@@ -126,8 +126,34 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 
 	end
 
-# the CO2 emissions assocoated with fleccs are not calculated here
-# here we only account for the co2 emissions asscoiated with startup fuel, which can not be captured.
+    # the CO2 emissions scaling
+	fuel_type = collect(skipmissing(gen_ccs[!,:Fuel]))
+
+	inputs_ccs["C_Fuel_per_MMBTU_fleccs"] = zeros(Float64, n_F, inputs_ccs["T"])
+	inputs_ccs["dfGen_ccs"][!,:CO2_per_MMBTU] = zeros(Float64, n_F)
+	for i in 1:n_F
+			# NOTE: When Setup[ParameterScale] =1, fuel costs are scaled in fuels_data.csv, so no if condition needed to scale C_Fuel_per_MWh
+		inputs_ccs["C_Fuel_per_MMBTU_fleccs"][i,:] = fuel_costs[fuel_type[i]]
+		inputs_ccs["dfGen_ccs"][!,:CO2_per_MMBTU][i] = fuel_CO2[fuel_type[i]]
+	
+		if setup["ParameterScale"] ==1
+			inputs_ccs["C_Fuel_per_MMBTU_fleccs"][i,:] = fuel_costs[fuel_type[i]]*ModelScalingFactor	
+			inputs_ccs["dfGen_ccs"][!,:CO2_per_MMBTU][i] = fuel_CO2[fuel_type[i]]*ModelScalingFactor
+		end
+	end
+
+	# scale CO2 sequestration cost 
+	inputs_ccs["FLECCS_parameters"] = FLECCS_parameters
+
+	if setup["ParameterScale"] == 1
+		for y in FLECCS_ALL
+		    inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration][y] = inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration][y]/ModelScalingFactor
+		end
+	end
+
+	
+
+    # here we only account for the co2 emissions asscoiated with startup fuel, which can not be captured.
 	if setup["UCommit"]>=1
 
 		inputs_ccs["COMMIT_CCS"] = G_F
@@ -144,7 +170,7 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 		inputs_ccs["C_Start"] = zeros(Float64, n_F, inputs_ccs["T"])
 		inputs_ccs["dfGen_ccs"][!,:CO2_per_Start] = zeros(Float64, n_F)
 	    # Fuel used by each resource
-	    fuel_type = collect(skipmissing(gen_ccs[!,:Fuel]))
+
 
 	   # for g in 1:n_F
 			# Start-up cost is sum of fixed cost per start plus cost of fuel consumed on startup.

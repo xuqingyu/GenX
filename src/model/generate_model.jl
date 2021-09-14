@@ -110,7 +110,7 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 	@expression(EP, eObj, 0)
 
 	# Infrastructure
-	EP = discharge(EP, inputs, setup["PieceWiseHeatRate"], setup["CostCO2"])
+	EP = discharge(EP, inputs, setup["PieceWiseHeatRate"])
 
 	EP = non_served_energy(EP, inputs)
 
@@ -182,7 +182,7 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 
 	# Model constraints, variables, expression related to fleccs
 	if (setup["FLECCS"] >= 1)
-		EP = fleccs(EP, inputs, setup["FLECCS"], setup["UCommit"], setup["Reserves"], setup["CostCO2"], setup["ParameterScale"])
+		EP = fleccs(EP, inputs, setup["FLECCS"], setup["UCommit"], setup["Reserves"])
 	end
 
 	## Define the objective function

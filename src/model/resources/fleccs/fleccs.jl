@@ -27,7 +27,7 @@ fleccs6 = NGCC coupled  with DAC (MIT)
 fleccs6 = Allam cycle coupled with CO2 storage
 """
 
-function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int, CostCO2::Int, ParameterScale::Int)
+function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int)
 	# load fleccs fixed and investment module
 	println("load fleccs module")
 
@@ -38,7 +38,7 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 	if FLECCS ==1
 		EP = fleccs1(EP, inputs, FLECCS, UCommit, Reserves)
 	elseif FLECCS ==2
-		EP = fleccs2(EP, inputs, FLECCS,UCommit, Reserves, CostCO2, ParameterScale)
+		EP = fleccs2(EP, inputs, FLECCS,UCommit, Reserves)
 	elseif FLECCS ==3
 		EP = fleccs3(EP, inputs, FLECCS, UCommit, Reserves)
 	elseif FLECCS ==4
