@@ -49,13 +49,6 @@ function ucommit(EP::Model, inputs::Dict, UCommit::Int)
 
 	COMMIT = inputs["COMMIT"] # For not, thermal resources are the only ones eligible for Unit Committment
 
-
-	# Fleccs 
-	FLECCS_ALL = inputs["FLECCS_ALL"]
-
-	# get number of flexible subcompoents
-	N_F = inputs["N_F"]
-
 	### Variables ###
 
 	## Decision variables for unit commitment
@@ -91,18 +84,6 @@ function ucommit(EP::Model, inputs::Dict, UCommit::Int)
 			end
 			if y in inputs["NEW_CAP"]
 				set_integer(EP[:vCAP][y])
-			end
-		end
-
-        #fleccs subcompoents
-		for y in FLECCS_ALL
-			for i in N_F
-				if y in inputs["NEW_CAP_fleccs"]
-					set_integer(EP[:vCAP_fleccs[y,i]])
-				end
-				if y in inputs["RET_CAP_fleccs"]
-					set_integer(EP[:vRETCAP_fleccs[y,i]])
-				end
 			end
 		end
 	end #END unit commitment configuration

@@ -38,6 +38,9 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 
 	elseif setup["FLECCS"] == 3
 		gen_ccs = DataFrame(CSV.File(string(path,sep,"Fleccs_data3.csv"), header=true), copycols=true)
+		FLECCS_parameters = DataFrame(CSV.File(string(path,sep,"Fleccs_data3_process_parameters.csv"), header=true), copycols=true)
+		inputs_ccs["n_F"] =nrow(gen_ccs)
+		inputs_ccs["N_F"] = unique(gen_ccs[!,:FLECCS_NO])
 		inputs_ccs["G_F"] = unique(gen_ccs[!,:R_ID])[1]
 		inputs_ccs["dfGen_ccs"] = gen_ccs
 		inputs_ccs["FLECCS_ALL"] = unique(gen_ccs[!,:R_ID])
@@ -146,9 +149,7 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 	inputs_ccs["FLECCS_parameters"] = FLECCS_parameters
 
 	if setup["ParameterScale"] == 1
-		for y in FLECCS_ALL
-		    inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration][y] = inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration][y]/ModelScalingFactor
-		end
+		inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration] = inputs_ccs["FLECCS_parameters"][!,:pCO2_sequestration]*1/ModelScalingFactor
 	end
 
 	
@@ -156,7 +157,7 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
     # here we only account for the co2 emissions asscoiated with startup fuel, which can not be captured.
 	if setup["UCommit"]>=1
 
-		inputs_ccs["COMMIT_CCS"] = G_F
+		inputs_ccs["COMMIT_CCS"] = gen_ccs[gen_ccs.THERM.==1,:FLECCS_NO]
 
 		if setup["ParameterScale"] ==1  # Parameter scaling turned on - adjust values of subset of parameter values
 			# Cost per MW of nameplate capacity to start a generator

@@ -116,7 +116,7 @@ include("model/resources/thermal/piecewiseheatrate.jl")
 include("model/resources/fleccs/fleccs.jl")
 include("model/resources/fleccs/fleccs_fix.jl")
 include("model/resources/fleccs/fleccs2.jl")
-
+include("model/resources/fleccs/fleccs3.jl")
 
 include("model/policies/co2_cap.jl")
 include("model/policies/energy_share_requirement.jl")
@@ -171,6 +171,8 @@ include("write_outputs/ucommit/write_shutdown.jl")
 include("write_outputs/ucommit/write_start.jl")
 
 include("write_outputs/fleccs/write_capacity_fleccs.jl")
+include("write_outputs/fleccs/write_output_fleccs.jl")
+include("write_outputs/fleccs/write_power_fleccs.jl")
 
 include("write_outputs/write_outputs.jl")
 

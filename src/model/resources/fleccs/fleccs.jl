@@ -30,6 +30,9 @@ fleccs6 = Allam cycle coupled with CO2 storage
 function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int)
 	# load fleccs fixed and investment module
 	println("load fleccs module")
+	# Fleccs 
+	FLECCS_ALL = inputs["FLECCS_ALL"]
+	COMMIT_ccs = inputs["COMMIT_CCS"]
 
 	#EP = fleccs_fix(EP, inputs, FLECCS,  UCommit, Reserves)
 
@@ -48,4 +51,9 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 	elseif FLECCS ==6
 		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
 	end
+
+	return EP
+
+
+
 end

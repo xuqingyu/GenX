@@ -50,19 +50,19 @@ function fleccs_fix(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserve
 
 	@expression(EP, eTotalCapFleccs[y in FLECCS_ALL, i in N_F],
 	    if y in intersect(NEW_CAP_ccs, RET_CAP_ccs) # Resources eligible for new capacity and retirements
-		    if UCommit >= 1 
+		    if i in COMMIT_ccs
 			    gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i] + gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i] * (EP[:vCAP_fleccs][y,i] - EP[:vRETCAP_fleccs][y,i])
 		    else
 	    		gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i]  + EP[:vCAP_fleccs][y,i] - EP[:vRETCAP_fleccs][y,i]
 		    end
      	elseif y in setdiff(NEW_CAP_ccs, RET_CAP_ccs) # Resources eligible for only new capacity
-	    	if UCommit >= 1 
+	    	if i in COMMIT_ccs
 		    	gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i]  + gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*EP[:vCAP_fleccs][y,i]
 	    	else
 		    	gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i] + EP[:vCAP_fleccs][y,i]
 		    end
     	elseif y in setdiff(RET_CAP_ccs, NEW_CAP_ccs) # Resources eligible for only capacity retirements
-	    	if UCommit >= 1 
+	    	if i in COMMIT_ccs
     			gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i]  - gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*EP[:vRETCAP_fleccs][y,i]
 	    	else
 		    	gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i]  - EP[:vRETCAP_fleccs][y,i]
@@ -79,7 +79,7 @@ function fleccs_fix(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserve
 
 	@expression(EP, eCFixFleccs[y in FLECCS_ALL,i in N_F],
 	    if y in NEW_CAP_ccs # Resources eligible for new capacity
-		    if UCommit >=1
+		    if i in COMMIT_ccs
 		    	gen_ccs[(gen_ccs[!,:R_ID].==y),:Inv_Cost_per_Unityr][i] * gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i] *vCAP_fleccs[y,i] + gen_ccs[(gen_ccs[!,:R_ID].==y),:Fixed_OM_Cost_per_Unityr][i] *eTotalCapFleccs[y,i]
 	    	else
 	    		gen_ccs[(gen_ccs[!,:R_ID].==y),:Inv_Cost_per_Unityr][i] * vCAP_fleccs[y,i] + gen_ccs[(gen_ccs[!,:R_ID].==y),:Fixed_OM_Cost_per_Unityr][i] *eTotalCapFleccs[y,i]
@@ -102,8 +102,23 @@ function fleccs_fix(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserve
 	@constraint(EP, cMaxRetNoCommitFleccs[y in setdiff(RET_CAP_ccs,COMMIT_ccs),i in N_F], vRETCAP_fleccs[y,i] <= gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i])
 	@constraint(EP, cMaxRetCommitFleccs[y in intersect(RET_CAP_ccs,COMMIT_ccs),i in N_F], gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vRETCAP_fleccs[y,i] <= gen_ccs[(gen_ccs[!,:R_ID].==y),:Existing_Cap_Unit][i])
 
+	# DEV NOTE: This constraint may be violated in some cases where Existing_Cap_MW is >= Max_Cap_MW and lead to infeasabilty
+	@constraint(EP, cMaxCapFleccs[y in intersect(gen_ccs[gen_ccs.Max_Cap_MW.>0,:R_ID]), i in N_F], eTotalCapFleccs[y,i] <=gen_ccs[(gen_ccs[!,:R_ID].==y),:Max_Cap_MW][i])
 
 	###
+	if UCommit == 1 # Integer UC constraints
+        #fleccs subcompoents
+		for y in FLECCS_ALL
+			for i in COMMIT_ccs
+				if y in inputs["NEW_CAP_fleccs"]
+					set_integer(vCAP_fleccs[y,i])
+				end
+				if y in inputs["RET_CAP_fleccs"]
+					set_integer(vRETCAP_fleccs[y,i])
+				end
+			end
+		end
+	end #END unit commitment configuration
 	
 	return EP
 end

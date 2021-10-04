@@ -158,17 +158,14 @@ function fleccs2(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
 
 	#min power constraints 
-
-    #Maximum capacity constraints
-	# Maximum power generated for combustion TURBINE at hour "t"
 	@constraint(EP, cMinGeneration_gt[y in FLECCS_ALL,t=1:T], vP_gt[y,t] >= gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][NGCT_id] *EP[:eTotalCapFleccs][y,NGCT_id])
-    # Maximum power generated for steam TURBINE at hour "t"
+    # Min power generated for steam TURBINE at hour "t"
     @constraint(EP, cMinGeneration_st[y in FLECCS_ALL,t=1:T], ePower_st[y,t] >=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][NGST_id]* EP[:eTotalCapFleccs][y,NGST_id])
     #Power used for compressing CO2 should be less the compressor capacity
     @constraint(EP, cMinGeneration_comp[y in FLECCS_ALL,t=1:T], ePower_use_comp[y,t] >=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][Comp_id]  *EP[:eTotalCapFleccs][y,Comp_id])
-    # Maximum captured CO2  from adsorber at time t should be less than the capacity of capture unit [tonne CO2]
+    # Min captured CO2  from adsorber at time t should be less than the capacity of capture unit [tonne CO2]
     @constraint(EP, cMinCapture[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] >=  gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][Absorber_id] * EP[:eTotalCapFleccs][y,Absorber_id] )
-    # Maximum Regenerated CO2  from regenerator at time t [tonne CO2]
+    # Min Regenerated CO2  from regenerator at time t [tonne CO2]
     @constraint(EP, cMinRegeneration[y in FLECCS_ALL,t=1:T], vREGEN[y,t] >=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][Regen_id] * EP[:eTotalCapFleccs][y,Regen_id])
 
 

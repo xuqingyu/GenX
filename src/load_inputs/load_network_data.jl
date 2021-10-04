@@ -26,8 +26,8 @@ function load_network_data(setup::Dict, path::AbstractString, sep::AbstractStrin
     network_var = DataFrame(CSV.File(string(path,sep,"Network.csv"), header=true), copycols=true)
 
     # Number of zones in the network
-    #inputs_nw["Z"]=size(collect(skipmissing(network_var[!,:Network_zones])),1):##Original
-    inputs_nw["Z"] = size(findall(s -> occursin("z", s), names(network_var)),1) ##Greg's PR
+    inputs_nw["Z"]=size(collect(skipmissing(network_var[!,:Network_zones])),1) ##Original
+    #inputs_nw["Z"] = size(findall(s -> occursin("z", s), names(network_var)),1) ##Greg's PR
     Z = inputs_nw["Z"]
     # Number of lines in the network
     inputs_nw["L"]=size(collect(skipmissing(network_var[!,:Network_Lines])),1)
@@ -55,7 +55,7 @@ function load_network_data(setup::Dict, path::AbstractString, sep::AbstractStrin
 
     # Maximum possible flow after reinforcement for use in linear segments of piecewise approximation
     inputs_nw["pTrans_Max_Possible"] = zeros(Float64, inputs_nw["L"])
-        
+
     if setup["NetworkExpansion"]==1
         if setup["ParameterScale"] ==1  # Parameter scaling turned on - adjust values of subset of parameter values
             # Read between zone network reinforcement costs per peak MW of capacity added
