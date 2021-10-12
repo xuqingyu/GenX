@@ -24,48 +24,45 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 	gen_ccs = inputs["dfGen_ccs"]
 	FLECCS_ALL = inputs["FLECCS_ALL"]
 	N_F = inputs["N_F"]
-	# the number of rows for fleccs generator 
+	COMMIT_ccs  =inputs["COMMIT_CCS"]
+	# the number of rows for FLECCS generator 
 	#n = length(gen_ccs[!,"Resource"])/length(N_F)
 
     # the number of subcompoents 
 	N = length(N_F)
 
-	capfleccs = zeros(size(gen_ccs[!,"Resource"]))
+	capFLECCS = zeros(size(gen_ccs[!,"Resource"]))
+    #reshape(zeros(size(gen_ccs[!,"Resource"])),length(FLECCS_ALL),length(N_F))
+	for y in inputs["NEW_CAP_FLECCS"]
+		for i in COMMIT_ccs
+			capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
+		end
 
-	for y in inputs["NEW_CAP_fleccs"]
-		if setup["UCommit"] >= 1 
-			for i in N_F
-			    capfleccs[(y-1)*N + i] = value(EP[:vCAP_fleccs][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
-			end
-		else
-			for i in N_F
-			    capfleccs[(y-1)*N + i] = value(EP[:vCAP_fleccs][y, i])
-			end
+		for i in setdiff(N_F,COMMIT_ccs)
+			capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])
 		end
 	end
 
-	retcapfleccs = zeros(size(gen_ccs[!,"Resource"]))
+	retcapFLECCS = zeros(size(gen_ccs[!,"Resource"]))
 
 
-	for y in inputs["RET_CAP_fleccs"]
-		if setup["UCommit"] >= 1 
-			for i in N_F
-			    retcapfleccs[(y-1)*N + i] = value(EP[:vRETCAP_fleccs][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
-			end
-		else
-			for i in N_F
-			    retcapfleccs[(y-1)*N + i] = value(EP[:vRETCAP_fleccs][y, i])
-			end
+	for y in inputs["RET_CAP_FLECCS"]
+		for i in COMMIT_ccs
+			 retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
+		end
+
+		for i in setdiff(N_F,COMMIT_ccs)
+			retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])
 		end
 	end
 
 
 
 
-	EndCapfleccs = zeros(size(gen_ccs[!,"Resource"]))
+	EndCapFLECCS = zeros(size(gen_ccs[!,"Resource"]))
 	for y in FLECCS_ALL
 		for i in N_F
-		    EndCapfleccs[(y-1)*N+i] = value.(EP[:eTotalCapFleccs])[y,i]
+		    EndCapFLECCS[(y-1)*N+i] = value.(EP[:eTotalCapFLECCS])[y,i]
 		end
 	end
 
@@ -75,27 +72,27 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 
 
 
-	dfCapFleccs = DataFrame(
+	dfCapFLECCS = DataFrame(
 		Resource = gen_ccs[!,"Resource"], Zone = gen_ccs[!,:Zone],
 		StartCap = gen_ccs[!,:Existing_Cap_Unit],
-		RetCap = retcapfleccs[:],
-		NewCap = capfleccs[:],
-		EndCap = EndCapfleccs,
+		RetCap = retcapFLECCS[:],
+		NewCap = capFLECCS[:],
+		EndCap = EndCapFLECCS,
 	)
 	if setup["ParameterScale"] ==1
-		dfCapFleccs.StartCap = dfCapFleccs.StartCap * ModelScalingFactor
-		dfCapFleccs.RetCap = dfCapFleccs.RetCap * ModelScalingFactor
-		dfCapFleccs.NewCap = dfCapFleccs.NewCap * ModelScalingFactor
-		dfCapFleccs.EndCap = dfCapFleccs.EndCap * ModelScalingFactor
+		dfCapFLECCS.StartCap = dfCapFLECCS.StartCap * ModelScalingFactor
+		dfCapFLECCS.RetCap = dfCapFLECCS.RetCap * ModelScalingFactor
+		dfCapFLECCS.NewCap = dfCapFLECCS.NewCap * ModelScalingFactor
+		dfCapFLECCS.EndCap = dfCapFLECCS.EndCap * ModelScalingFactor
 	end
 
 	total = DataFrame(
 			Resource = "Total", Zone = "n/a",
-			StartCap = sum(dfCapFleccs[!,:StartCap]), RetCap = sum(dfCapFleccs[!,:RetCap]),
-			NewCap = sum(dfCapFleccs[!,:NewCap]), EndCap = sum(dfCapFleccs[!,:EndCap]),
+			StartCap = sum(dfCapFLECCS[!,:StartCap]), RetCap = sum(dfCapFLECCS[!,:RetCap]),
+			NewCap = sum(dfCapFLECCS[!,:NewCap]), EndCap = sum(dfCapFLECCS[!,:EndCap]),
 		)
 
-	dfCapFleccs = vcat(dfCapFleccs, total)
-	CSV.write(string(path,sep,"capacity_fleccs.csv"), dfCapFleccs)
-	return dfCapFleccs
+	dfCapFLECCS = vcat(dfCapFLECCS, total)
+	CSV.write(string(path,sep,"capacity_FLECCS.csv"), dfCapFLECCS)
+	return dfCapFLECCS
 end

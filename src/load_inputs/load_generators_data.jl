@@ -61,12 +61,6 @@ function load_generators_data(setup::Dict, path::AbstractString, sep::AbstractSt
 
 	# scale CO2 cost [the defacult unit is in $/tonne]
 
-	if setup["ParameterScale"] == 1
-		inputs_gen["CostCO2"] = setup["CostCO2"]/ModelScalingFactor
-	else
-		inputs_gen["CostCO2"] = setup["CostCO2"]
-	end
-	
 
 	# Set of thermal generator resources
 	if setup["UCommit"]>=1

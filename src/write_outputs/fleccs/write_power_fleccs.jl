@@ -26,7 +26,7 @@ function write_power_fleccs(path::AbstractString, sep::AbstractString, inputs::D
 	Z = inputs["Z"]
 	T = inputs["T"]
 	G_F = inputs["G_F"]
-	# the number of rows for fleccs generator 
+	# the number of rows for FLECCS generator 
 	#n = length(gen_ccs[!,"Resource"])/length(N_F)
 
     # the number of subcompoents 
@@ -72,10 +72,10 @@ function write_power_fleccs(path::AbstractString, sep::AbstractString, inputs::D
 			dfPower_heat_pump = hcat(dfPower_heat_pump, DataFrame( power_heat_pump* ModelScalingFactor, :auto))
 			dfPower_net = hcat(dfPower_net, DataFrame( power_net* ModelScalingFactor, :auto))
 
-			dfPower_fleccs = vcat(dfPower_gt,dfPower_st)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_aux)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_heat_pump)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_net)
+			dfPower_FLECCS = vcat(dfPower_gt,dfPower_st)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_aux)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_heat_pump)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_net)
 
 
 			
@@ -94,10 +94,10 @@ function write_power_fleccs(path::AbstractString, sep::AbstractString, inputs::D
 			dfPower_heat_pump = hcat(dfPower_heat_pump, DataFrame( power_heat_pump, :auto))
 			dfPower_net = hcat(dfPower_net, DataFrame( power_net, :auto))
 
-			dfPower_fleccs = vcat(dfPower_gt,dfPower_st)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_aux)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_heat_pump)
-			dfPower_fleccs =vcat(dfPower_fleccs,dfPower_net)
+			dfPower_FLECCS = vcat(dfPower_gt,dfPower_st)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_aux)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_heat_pump)
+			dfPower_FLECCS =vcat(dfPower_FLECCS,dfPower_net)
 
 
 		end
@@ -118,10 +118,10 @@ function write_power_fleccs(path::AbstractString, sep::AbstractString, inputs::D
 	#end
 	#rename!(total,auxNew_Names)
 	#dfPower = vcat(dfPower, total)
-	dfPower_fleccs = dftranspose(dfPower_fleccs, false)
-	#rename!(dfPower_fleccs,:Compressor => :Other_auxiliary)
-	#rename!(dfPower_fleccs,:BOP => :Net_Power)
+	dfPower_FLECCS = dftranspose(dfPower_FLECCS, false)
+	#rename!(dfPower_FLECCS,:Compressor => :Other_auxiliary)
+	#rename!(dfPower_FLECCS,:BOP => :Net_Power)
 
- 	CSV.write(string(path,sep,"power_fleccs.csv"), dfPower_fleccs, writeheader=false)
-	return dfPower_fleccs
+ 	CSV.write(string(path,sep,"power_FLECCS.csv"), dfPower_FLECCS, writeheader=false)
+	return dfPower_FLECCS
 end

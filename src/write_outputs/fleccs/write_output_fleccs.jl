@@ -25,8 +25,8 @@ function write_output_fleccs(path::AbstractString, sep::AbstractString, inputs::
 	N_F = inputs["N_F"]
 	Z = inputs["Z"]
 	T = inputs["T"]
-	G_F = inputs["G_F"]
-	# the number of rows for fleccs generator 
+	G_F = FLECCS_ALL
+	# the number of rows for FLECCS generator 
 	#n = length(gen_ccs[!,"Resource"])/length(N_F)
 
     # the number of subcompoents 
@@ -129,9 +129,9 @@ function write_output_fleccs(path::AbstractString, sep::AbstractString, inputs::
 	#end
 	#rename!(total,auxNew_Names)
 	#dfPower = vcat(dfPower, total)
-	#rename!(dfPower_fleccs,:Compressor => :Other_auxiliary)
-	#rename!(dfPower_fleccs,:BOP => :Net_Power)
+	#rename!(dfPower_FLECCS,:Compressor => :Other_auxiliary)
+	#rename!(dfPower_FLECCS,:BOP => :Net_Power)
 
- 	CSV.write(string(path,sep,"Variables_fleccs.csv"), dftranspose(dfVariable, false), writeheader=false)
+ 	CSV.write(string(path,sep,"Variables_FLECCS.csv"), dftranspose(dfVariable, false), writeheader=false)
 	return dfVariable
 end

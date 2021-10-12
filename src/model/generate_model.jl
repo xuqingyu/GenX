@@ -159,11 +159,25 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 		EP = thermal(EP, inputs, setup["UCommit"], setup["Reserves"], setup["PieceWiseHeatRate"])
 	end
 
+	# Model constraints, variables, expression related to fleccs
+	if (setup["FLECCS"] >= 1)
+		EP = fleccs(EP, inputs, setup["FLECCS"], setup["UCommit"], setup["Reserves"])
+	end
 
 
 	# Policies
 	# CO2 emissions limits
 	EP = co2_cap(EP, inputs, setup)
+
+	#CO2 Tax
+	if setup["CO2Tax"] == 1
+		EP = co2_tax(EP, inputs, setup)
+	end
+
+	#CO2 Credit
+	if setup["CO2Credit"] == 1
+		EP = co2_credit(EP, inputs, setup)
+	end
 
 
 	# Energy Share Requirement
@@ -180,10 +194,7 @@ function generate_model(setup::Dict,inputs::Dict,OPTIMIZER::MOI.OptimizerWithAtt
 		EP = minimum_capacity_requirement(EP, inputs)
 	end
 
-	# Model constraints, variables, expression related to fleccs
-	if (setup["FLECCS"] >= 1)
-		EP = fleccs(EP, inputs, setup["FLECCS"], setup["UCommit"], setup["Reserves"])
-	end
+
 
 	## Define the objective function
 	@objective(EP,Min,EP[:eObj])

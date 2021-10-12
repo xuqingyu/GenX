@@ -58,9 +58,9 @@ Similarly, a generation based emission constraint is defined by setting the emis
 
 Note that the generator-side rate-based constraint can be used to represent a fee-rebate (``feebate'') system: the dirty generators that emit above the bar ($\epsilon_{z,p,gen}^{maxCO_2}$) have to buy emission allowances from the emission regulator in the region $z$ where they are located; in the same vein, the clean generators get rebates from the emission regulator at an emission allowance price being the dual variable of the emissions rate constraint.
 """
-function co2_cap(EP::Model, inputs::Dict, setup::Dict)
+function co2_tax(EP::Model, inputs::Dict, setup::Dict)
 
-	println("C02 Policies Module")
+	println("C02 Tax Module")
 
 	dfGen = inputs["dfGen"]
 	SEG = inputs["SEG"]  # Number of lines
@@ -69,66 +69,13 @@ function co2_cap(EP::Model, inputs::Dict, setup::Dict)
 	Z = inputs["Z"]     # Number of zones
 
 	### Expressions ###
+	#CO2 Tax
 
-	# CO2 emissions for resources "y" during hour "t" [tons]
-	# if the model is using scaling, then vP is in GW;
-	@expression(EP, eEmissionsByPlant[y=1:G,t=1:T],
-	    if (setup["UCommit"] >= 1 & setup["PieceWiseHeatRate"] ==1)
-			if y in inputs["COMMIT"]
-				dfGen[!,:CO2_per_MMBTU][y]*EP[:vFuel][y,t] + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
-			else
-				dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]
-			end
-		else
-		    if y in inputs["COMMIT"]
-			    dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t] + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
-		    else
-		     	dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]
-	    	end
-		end
-	)
+	@expression(EP, eCCO2Tax[z=1:Z], inputs["dfCO2Tax"][!,"CO2Tax"][z]*sum(inputs["omega"][t]*EP[:eEmissionsByZone][z,t] for t in 1:T))
 
-	# Emissions per zone = sum of emissions from each generator
-	@expression(EP, eEmissionsByZone[z=1:Z, t=1:T], sum(eEmissionsByPlant[y,t] for y in dfGen[(dfGen[!,:Zone].==z),:R_ID]))
+	@expression(EP, eTotalCCO2Tax,sum(eCCO2Tax[z] for z in 1:Z))
 
-	if setup["CO2Cap"] == 2
-		@expression(EP, eELOSSByZone[z=1:Z],
-			sum(EP[:eELOSS][y] for y in intersect(inputs["STOR_ALL"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
-		)
-
-	elseif setup["CO2Cap"] == 3
-		@expression(EP, eGenerationByZone[z=1:Z, t=1:T], # the unit is GW
-			sum(EP[:vP][y,t] for y in intersect(inputs["THERM_ALL"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
-			+ sum(EP[:vP][y,t] for y in intersect(inputs["VRE"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
-			+ sum(EP[:vP][y,t] for y in intersect(inputs["MUST_RUN"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
-			+ sum(EP[:vP][y,t] for y in intersect(inputs["HYDRO_RES"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
-		)
-	end
-
-	### Constraints ###
-
-	## Mass-based: Emissions constraint in absolute emissions limit (tons)
-	if setup["CO2Cap"] == 1
-		@constraint(EP, cCO2Emissions_systemwide[cap=1:inputs["NCO2Cap"]],
-			sum(inputs["omega"][t] * eEmissionsByZone[z,t] for z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]), t=1:T) <=
-			sum(inputs["dfMaxCO2"][z,cap] for z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]))
-		)
-
-	## Load + Rate-based: Emissions constraint in terms of rate (tons/MWh)
-	elseif setup["CO2Cap"] == 2
-		@constraint(EP, cCO2Emissions_systemwide[cap=1:inputs["NCO2Cap"]],
-			sum(inputs["omega"][t] * eEmissionsByZone[z,t] for z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]), t=1:T) <=
-			sum(inputs["dfMaxCO2Rate"][z,cap] * sum(inputs["omega"][t] * (inputs["pD"][t,z] - sum(EP[:vNSE][s,t,z] for s in 1:SEG)) for t=1:T) for z = findall(x->x==1, inputs["dfCO2CapZones"][:,cap])) +
-			sum(inputs["dfMaxCO2Rate"][z,cap] * setup["StorageLosses"] *  eELOSSByZone[z] for z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]))
-		)
-
-	## Generation + Rate-based: Emissions constraint in terms of rate (tons/MWh)
-	elseif (setup["CO2Cap"]==3)
-		@constraint(EP, cCO2Emissions_systemwide[cap=1:inputs["NCO2Cap"]],
-			sum(inputs["omega"][t] * eEmissionsByZone[z,t] for z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]), t=1:T) <=
-			sum(inputs["dfMaxCO2Rate"][z,cap] * inputs["omega"][t] * eGenerationByZone[z,t] for t=1:T, z=findall(x->x==1, inputs["dfCO2CapZones"][:,cap]))
-		)
-	end
+	EP[:eObj] += eTotalCCO2Tax
 
 	return EP
 

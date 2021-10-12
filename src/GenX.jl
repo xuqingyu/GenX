@@ -76,6 +76,9 @@ include("load_inputs/load_minimum_capacity_requirement.jl")
 include("load_inputs/load_load_data.jl")
 include("load_inputs/load_fuels_data.jl")
 include("load_inputs/load_fleccs_data.jl")
+include("load_inputs/load_co2_tax.jl")
+include("load_inputs/load_co2_credit.jl")
+
 
 include("load_inputs/load_inputs.jl")
 
@@ -117,8 +120,13 @@ include("model/resources/fleccs/fleccs.jl")
 include("model/resources/fleccs/fleccs_fix.jl")
 include("model/resources/fleccs/fleccs2.jl")
 include("model/resources/fleccs/fleccs3.jl")
+include("model/resources/fleccs/fleccs4.jl")
+include("model/resources/fleccs/fleccs_no_commit.jl")
+include("model/resources/fleccs/fleccs_commit.jl")
 
 include("model/policies/co2_cap.jl")
+include("model/policies/co2_tax.jl")
+include("model/policies/co2_credit.jl")
 include("model/policies/energy_share_requirement.jl")
 include("model/policies/cap_reserve_margin.jl")
 include("model/policies/minimum_capacity_requirement.jl")

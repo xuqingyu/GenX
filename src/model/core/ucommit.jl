@@ -48,7 +48,6 @@ function ucommit(EP::Model, inputs::Dict, UCommit::Int)
 	T = inputs["T"]     # Number of time steps (hours)
 
 	COMMIT = inputs["COMMIT"] # For not, thermal resources are the only ones eligible for Unit Committment
-
 	### Variables ###
 
 	## Decision variables for unit commitment
@@ -87,6 +86,18 @@ function ucommit(EP::Model, inputs::Dict, UCommit::Int)
 			end
 		end
 	end #END unit commitment configuration
+
+
+	
+
+
+	
+
+	
+
+
+
+
 
 	return EP
 end

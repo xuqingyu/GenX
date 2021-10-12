@@ -15,31 +15,26 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 @doc raw"""
-	load_co2_tax(setup::Dict, path::AbstractString, sep::AbstractString, inputs_co2_tax::Dict)
+	load_co2_tax(setup::Dict, path::AbstractString, sep::AbstractString, inputs_co2_credit::Dict)
 
 Function for reading input parameters related to CO$_2$ emissions cap constraints
 """
-function load_co2_tax(setup::Dict, path::AbstractString, sep::AbstractString, inputs_co2_tax::Dict)
+function load_co2_credit(setup::Dict, path::AbstractString, sep::AbstractString, inputs_co2_credit::Dict)
 	# Definition of CO2 Tax requirements by zone (as Max Mtons)
-	#inputs_co2_tax["dfCO2Cap"] = CSV.read(string(path,sep,"CO2_cap.csv"), header=true)
-	inputs_co2_tax["dfCO2Tax"] = DataFrame(CSV.File(string(path, sep,"CO2_tax.csv"), header=true), copycols=true)
-
-
-	inputs_co2_tax["dfCO2Tax"][!,:CO2Tax] = convert(Array{Float64}, inputs_co2_tax["dfCO2Tax"][!,:CO2Tax])
-
+	#inputs_co2_credit["dfCO2Cap"] = CSV.read(string(path,sep,"CO2_cap.csv"), header=true)
+	inputs_co2_credit["dfCO2Credit"] = DataFrame(CSV.File(string(path, sep,"CO2_credit.csv"), header=true), copycols=true)
+	inputs_co2_credit["dfCO2Credit"][!,:CO2Credit] = convert(Array{Float64}, inputs_co2_credit["dfCO2Credit"][!,:CO2Credit])
 
 	# scale parameters if ModelScalingFactor is applied 
 	# convert the unit from $/ton to $/kton
 	if setup["ParameterScale"] == 1
-		inputs_co2_tax["dfCO2Tax"][!,:CO2Tax] = inputs_co2_tax["dfCO2Tax"][!,:CO2Tax]/ModelScalingFactor
-
+		inputs_co2_credit["dfCO2Credit"][!,:CO2Credit] = inputs_co2_credit["dfCO2Credit"][!,:CO2Credit]/ModelScalingFactor	
 	else
-		inputs_co2_tax["dfCO2Tax"][!,:CO2Tax] = inputs_co2_tax["dfCO2Tax"][!,:CO2Tax]
-
+		inputs_co2_credit["dfCO2Credit"][!,:CO2Credit] = inputs_co2_credit["dfCO2Credit"][!,:CO2Credit]
 	end
 
 
 
 	println("CO2_tax.csv Successfully Read!")
-	return inputs_co2_tax
+	return inputs_co2_credit
 end

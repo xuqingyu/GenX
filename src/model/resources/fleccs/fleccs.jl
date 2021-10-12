@@ -15,26 +15,27 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 @doc raw"""
-	fleccs(EP::Model, inputs::Dict, UCommit::Int, Reserves::Int)
+	FLECCS(EP::Model, inputs::Dict, UCommit::Int, Reserves::Int)
 
-The fleccs module determines which flecce deisng should be implemented
-fleccs1 = conventional NGCC-CCS
-fleccs2 = NGCC coupled with solvent storate
-fleccs3 = NGCC coupled with thermal storage
-fleccs4 = NGCC coupled with H2 storage
-fleccs5 = NGCC coupled with DAC (GT+Upitt)
-fleccs6 = NGCC coupled  with DAC (MIT)
-fleccs6 = Allam cycle coupled with CO2 storage
+The FLECCS module determines which flecce deisng should be implemented
+FLECCS1 = conventional NGCC-CCS
+FLECCS2 = NGCC coupled with solvent storate
+FLECCS3 = NGCC coupled with thermal storage
+FLECCS4 = NGCC coupled with H2 storage
+FLECCS5 = NGCC coupled with DAC (GT+Upitt)
+FLECCS6 = NGCC coupled  with DAC (MIT)
+FLECCS6 = Allam cycle coupled with CO2 storage
 """
 
 function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int)
-	# load fleccs fixed and investment module
-	println("load fleccs module")
-	# Fleccs 
+	# load FLECCS fixed and investment module
+	println("load FLECCS module")
+	# FLECCS 
 	FLECCS_ALL = inputs["FLECCS_ALL"]
 	COMMIT_ccs = inputs["COMMIT_CCS"]
+	NO_COMMIT_ccs = inputs["NO_COMMIT_CCS"]
 
-	#EP = fleccs_fix(EP, inputs, FLECCS,  UCommit, Reserves)
+	#EP = FLECCS_fix(EP, inputs, FLECCS,  UCommit, Reserves)
 
 	EP = fleccs_fix(EP, inputs, FLECCS,  UCommit, Reserves)
 
@@ -47,10 +48,20 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 	elseif FLECCS ==4
 		EP = fleccs4(EP, inputs, FLECCS, UCommit, Reserves)
 	elseif FLECCS ==5
-		EP = fleccs5(EP, inputs,  FLECCS,UCommit, Reserves)
+		EP = fleccs5(EP, inputs,  FLECCS, UCommit, Reserves)
 	elseif FLECCS ==6
 		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
 	end
+
+	if !isempty(NO_COMMIT_ccs)
+		EP = fleccs_no_commit(EP, inputs, FLECCS, Reserves)
+	end
+
+	if !isempty(COMMIT_ccs)
+		EP = fleccs_commit(EP, inputs, FLECCS,UCommit, Reserves)
+	end
+	
+
 
 	return EP
 
