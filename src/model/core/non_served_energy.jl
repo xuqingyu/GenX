@@ -59,7 +59,7 @@ Additionally, total demand curtailed in each time step cannot exceed total deman
 ```
 
 """
-function non_served_energy(EP::Model, inputs::Dict)
+function non_served_energy(EP::Model, inputs::Dict, CapacityReserveMargin::Int)
 
 	println("Non-served Energy Module")
 
@@ -104,6 +104,13 @@ function non_served_energy(EP::Model, inputs::Dict)
 
 	# Total demand curtailed in each time step (hourly) cannot exceed total demand
 	@constraint(EP, cMaxNSE[t=1:T, z=1:Z], sum(vNSE[s,t,z] for s=1:SEG) <= inputs["pD"][t,z])
-
+	# Capacity Reserves Margin policy
+	if CapacityReserveMargin > 0
+		if SEG >=2
+			@expression(EP, eCapResMarBalanceNSE[res=1:inputs["NCapacityReserveMargin"], t=1:T], sum(EP[:vNSE][s,t,z] for s in 2:SEG, z in findall(x->x>0,inputs["dfCapRes"][:,res])))
+			EP[:eCapResMarBalance] += eCapResMarBalanceNSE
+		end
+	end
+	
 	return EP
 end

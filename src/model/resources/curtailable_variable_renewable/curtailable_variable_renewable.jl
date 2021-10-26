@@ -35,7 +35,7 @@ The above constraint is defined as an inequality instead of an equality to allow
 
 Note that if ```Reserves=1``` indicating that frequency regulation and operating reserves are modeled, then this function calls ```curtailable_variable_renewable_reserves()```, which replaces the above constraints with a formulation inclusive of reserve provision.
 """
-function curtailable_variable_renewable(EP::Model, inputs::Dict, Reserves::Int)
+function curtailable_variable_renewable(EP::Model, inputs::Dict, Reserves::Int, CapacityReserveMargin::Int)
 	## Controllable variable renewable generators
 	### Option of modeling VRE generators with multiple availability profiles and capacity limits -  Num_VRE_Bins in Generators_data.csv  >1
 	## Default value of Num_VRE_Bins ==1
@@ -60,6 +60,11 @@ function curtailable_variable_renewable(EP::Model, inputs::Dict, Reserves::Int)
 	sum(EP[:vP][y,t] for y in intersect(VRE, dfGen[dfGen[!,:Zone].==z,:][!,:R_ID])))
 
 	EP[:ePowerBalance] += ePowerBalanceDisp
+
+	if CapacityReserveMargin > 0
+		@expression(EP, eCapResMarBalanceVRE[res=1:inputs["NCapacityReserveMargin"], t=1:T], sum(dfGen[y,Symbol("CapRes_$res")] * EP[:eTotalCap][y] * inputs["pP_Max"][y,t]  for y in VRE))
+		EP[:eCapResMarBalance] += eCapResMarBalanceVRE
+	end
 
 	### Constratints ###
 	# For resource for which we are modeling hourly power output

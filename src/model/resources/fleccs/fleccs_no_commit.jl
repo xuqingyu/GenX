@@ -61,7 +61,7 @@ function fleccs_no_commit(EP::Model, inputs::Dict, FLECCS::Int, Reserves::Int)
 
 	println("FLECCS (No Unit Commitment) Resources Module")
 
-	gen_ccs = inputs["dfGen_ccs"]
+	dfGen_ccs = inputs["dfGen_ccs"]
 
 	T = inputs["T"]     # Number of time steps (hours)
 	Z = inputs["Z"]     # Number of zones
@@ -87,14 +87,14 @@ function fleccs_no_commit(EP::Model, inputs::Dict, FLECCS::Int, Reserves::Int)
 		## Gas turbine 
 		# Start Hours: Links last time step with first time step, ensuring position in hour 1 is within eligible ramp of final hour position
 		# NOTE: We should make wrap-around a configurable option
-		[y in FLECCS_ALL, i in NO_COMMIT_ccs, t in START_SUBPERIODS], EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] <=  gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*EP[:eTotalCapFLECCS][y,i]
+		[y in FLECCS_ALL, i in NO_COMMIT_ccs, t in START_SUBPERIODS], EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] <=  dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*EP[:eTotalCapFLECCS][y,i]
 		# Interior Hours
-		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in INTERIOR_SUBPERIODS], EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,t-1] <=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i] * EP[:eTotalCapFLECCS][y,i]
+		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in INTERIOR_SUBPERIODS], EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,t-1] <=   dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i] * EP[:eTotalCapFLECCS][y,i]
 		## Maximum ramp down between consecutive hours
 		# Start Hours: Links last time step with first time step, ensuring position in hour 1 is within eligible ramp of final hour position
-		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in START_SUBPERIODS], EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] -EP[:vFLECCS_output][y,i,t] <=  gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*EP[:eTotalCapFLECCS][y,i]
+		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in START_SUBPERIODS], EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] -EP[:vFLECCS_output][y,i,t] <=  dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*EP[:eTotalCapFLECCS][y,i]
 		# Interior Hours
-		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in INTERIOR_SUBPERIODS], EP[:vFLECCS_output][y,i,t-1] - EP[:vFLECCS_output][y,i,t] <=gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i] * EP[:eTotalCapFLECCS][y,i]
+		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t in INTERIOR_SUBPERIODS], EP[:vFLECCS_output][y,i,t-1] - EP[:vFLECCS_output][y,i,t] <=dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i] * EP[:eTotalCapFLECCS][y,i]
 
 	end)
 
@@ -104,7 +104,7 @@ function fleccs_no_commit(EP::Model, inputs::Dict, FLECCS::Int, Reserves::Int)
 	@constraints(EP, begin
 	    # gas turbine 
 		# Minimum stable power generated per technology "y" at hour "t" Min_Power
-		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] >= gen_ccs[!,:Min_Power][y]*EP[:eTotalCapFLECCS][y,i]
+		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] >= dfGen_ccs[!,:Min_Power][y]*EP[:eTotalCapFLECCS][y,i]
 		# Maximum power generated per technology "y" at hour "t"
 		[y in FLECCS_ALL,i in NO_COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] <= EP[:eTotalCapFLECCS][y,i]
 
@@ -112,6 +112,12 @@ function fleccs_no_commit(EP::Model, inputs::Dict, FLECCS::Int, Reserves::Int)
 
 
 	# END Constraints for FLECCS resources not subject to unit commitment
+
+	##### CO2 emissioms
+	
+	# Add CO2 from start up fuel and vented CO2
+	#@expression(EP, eEmissionsByPlantFLECCS[y in FLECCS_ALL, t=1:T], EP[:eCO2_vent][y,t])
+
 
 	return EP
 end

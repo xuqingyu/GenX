@@ -143,7 +143,7 @@ function fleccs_commit(EP::Model, inputs::Dict,FLECCS::Int,UCommit::Int,  Reserv
 
 	println("FLECCS (Unit Commitment) Resources Module")
 
-	gen_ccs = inputs["dfGen_ccs"]
+	dfGen_ccs = inputs["dfGen_ccs"]
 
 	T = inputs["T"]     # Number of time steps (hours)
 	Z = inputs["Z"]     # Number of zones
@@ -213,9 +213,9 @@ function fleccs_commit(EP::Model, inputs::Dict,FLECCS::Int,UCommit::Int,  Reserv
 
 	### Capacitated limits on unit commitment decision variables (Constraints #1-3)
 	@constraints(EP, begin
-		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vCOMMIT_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
-		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vSTART_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
-		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vSHUT_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
+		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vCOMMIT_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
+		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vSTART_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
+		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], vSHUT_FLECCS[y,i,t] <= EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
 	end)
 
 	# Commitment state constraint linking startup and shutdown decisions (Constraint #4)
@@ -232,36 +232,36 @@ function fleccs_commit(EP::Model, inputs::Dict,FLECCS::Int,UCommit::Int,  Reserv
 	# Links last time step with first time step, ensuring position in hour 1 is within eligible ramp of final hour position
 		# rampup constraints
 	@constraint(EP,[y in FLECCS_ALL, i in COMMIT_ccs, t in START_SUBPERIODS],
-		EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] <= gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
-			+ min(1,max(gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i],gen_ccs[!,:Ramp_Up_Percentage][y]))*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
-			-gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
+		EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)] <= dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
+			+ min(1,max(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i],dfGen_ccs[!,:Ramp_Up_Percentage][y]))*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
+			-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
 
 		# rampdown constraints
 	@constraint(EP,[y in FLECCS_ALL, i in COMMIT_ccs, t in START_SUBPERIODS],
-		EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)]-EP[:vFLECCS_output][y,i,t] <=gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
-			-gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
-			+ min(1,max(gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i],gen_ccs[!,:Ramp_Dn_Percentage][y]))*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
+		EP[:vFLECCS_output][y,i,(t+hours_per_subperiod-1)]-EP[:vFLECCS_output][y,i,t] <=dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
+			-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
+			+ min(1,max(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i],dfGen_ccs[!,:Ramp_Dn_Percentage][y]))*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
 
 	## For Interior Hours
 		# rampup constraints
 	@constraint(EP,[y in FLECCS_ALL, i in COMMIT_ccs, t in INTERIOR_SUBPERIODS],
-		EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,t-1] <=gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
-			+ min(1,max(gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i],gen_ccs[!,:Ramp_Up_Percentage][y]))*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
-			-gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
+		EP[:vFLECCS_output][y,i,t]-EP[:vFLECCS_output][y,i,t-1] <=dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Up_Percentage][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
+			+ min(1,max(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i],dfGen_ccs[!,:Ramp_Up_Percentage][y]))*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
+			-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
 
 		# rampdown constraints
 	@constraint(EP,[y in FLECCS_ALL, i in COMMIT_ccs, t in INTERIOR_SUBPERIODS],
-		EP[:vFLECCS_output][y,i,t-1]-EP[:vFLECCS_output][y,i,t] <=gen_ccs[(gen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
-			-gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
-			+min(1,max(gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i],gen_ccs[!,:Ramp_Dn_Percentage][y]))*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
+		EP[:vFLECCS_output][y,i,t-1]-EP[:vFLECCS_output][y,i,t] <=dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Ramp_Dn_Percentage][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*(vCOMMIT_FLECCS[y,i,t]-vSTART_FLECCS[y,i,t])
+			-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSTART_FLECCS[y,i,t]
+			+min(1,max(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i],dfGen_ccs[!,:Ramp_Dn_Percentage][y]))*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vSHUT_FLECCS[y,i,t])
 
 	### Minimum and maximum power output constraints (Constraints #7-8)
 	@constraints(EP, begin
 		# Minimum stable power generated per technology "y" at hour "t" > Min power
-		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] >= gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_Power][i]*gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vCOMMIT_FLECCS[y,i,t]
+		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] >= dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_Power][i]*dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vCOMMIT_FLECCS[y,i,t]
 
 		# Maximum power generated per technology "y" at hour "t" < Max power
-		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] <= gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]*vCOMMIT_FLECCS[y,i,t]
+		[y in FLECCS_ALL, i in COMMIT_ccs, t=1:T], EP[:vFLECCS_output][y,i,t] <= dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]*vCOMMIT_FLECCS[y,i,t]
 	end)
 
 
@@ -270,50 +270,63 @@ function fleccs_commit(EP::Model, inputs::Dict,FLECCS::Int,UCommit::Int,  Reserv
 	for y in FLECCS_ALL
 		for i in COMMIT_ccs
 		    ## up time
-		    Up_Time = Int(floor(gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i]))
+		    Up_Time = Int(floor(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i]))
 		    Up_Time_HOURS = [] # Set of hours in the summation term of the maximum up time constraint for the first subperiod of each representative period
 		    for s in START_SUBPERIODS
 			    Up_Time_HOURS = union(Up_Time_HOURS, (s+1):(s+Up_Time-1))
 		    end
 
 		    @constraints(EP, begin
-			    # cUpTimeInterior: Constraint looks back over last n hours, where n = gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i])
-			    [t in setdiff(INTERIOR_SUBPERIODS,Up_Time_HOURS)], vCOMMIT_FLECCS[y,i,t] >= sum(vSTART_FLECCS[y,i,e] for e=(t-gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i]):t)
+			    # cUpTimeInterior: Constraint looks back over last n hours, where n = dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i])
+			    [t in setdiff(INTERIOR_SUBPERIODS,Up_Time_HOURS)], vCOMMIT_FLECCS[y,i,t] >= sum(vSTART_FLECCS[y,i,e] for e=(t-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i]):t)
 
 			    # cUpTimeWrap: If n is greater than the number of subperiods left in the period, constraint wraps around to first hour of time series
-			    # cUpTimeWrap constraint equivalant to: sum(vSTART_FLECCS[y,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSTART_FLECCS[y,e] for e=(hours_per_subperiod_max-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i])-(t%hours_per_subperiod))):hours_per_subperiod_max)
-			    [t in Up_Time_HOURS], vCOMMIT_FLECCS[y,i,t] >= sum(vSTART_FLECCS[y,i,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSTART_FLECCS[y,i,e] for e=((t+hours_per_subperiod-(t%hours_per_subperiod))-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i]-(t%hours_per_subperiod))):(t+hours_per_subperiod-(t%hours_per_subperiod)))
+			    # cUpTimeWrap constraint equivalant to: sum(vSTART_FLECCS[y,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSTART_FLECCS[y,e] for e=(hours_per_subperiod_max-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i])-(t%hours_per_subperiod))):hours_per_subperiod_max)
+			    [t in Up_Time_HOURS], vCOMMIT_FLECCS[y,i,t] >= sum(vSTART_FLECCS[y,i,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSTART_FLECCS[y,i,e] for e=((t+hours_per_subperiod-(t%hours_per_subperiod))-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i]-(t%hours_per_subperiod))):(t+hours_per_subperiod-(t%hours_per_subperiod)))
 
 			    # cUpTimeStart:
 			    # NOTE: Expression t+hours_per_subperiod-(t%hours_per_subperiod) is equivalant to "hours_per_subperiod_max"
-			    [t in START_SUBPERIODS], vCOMMIT_FLECCS[y,i,t] >= vSTART_FLECCS[y,i,t]+sum(vSTART_FLECCS[y,i,e] for e=((t+hours_per_subperiod-1)-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Up_Time][i]-1)):(t+hours_per_subperiod-1))
+			    [t in START_SUBPERIODS], vCOMMIT_FLECCS[y,i,t] >= vSTART_FLECCS[y,i,t]+sum(vSTART_FLECCS[y,i,e] for e=((t+hours_per_subperiod-1)-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Up_Time][i]-1)):(t+hours_per_subperiod-1))
 		    end)
 
 		    ## down time
-		    Down_Time = Int(floor(gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]))
+		    Down_Time = Int(floor(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]))
 		    Down_Time_HOURS = [] # Set of hours in the summation term of the maximum down time constraint for the first subperiod of each representative period
 		    for s in START_SUBPERIODS
 		    	Down_Time_HOURS = union(Down_Time_HOURS, (s+1):(s+Down_Time-1))
 		    end
 
-		    # Constraint looks back over last n hours, where n = gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]
+		    # Constraint looks back over last n hours, where n = dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]
 		    # TODO: Replace LHS of constraints in this block with eNumPlantsOffline[y,t]
 		    @constraints(EP, begin
 		    	# cDownTimeInterior: Constraint looks back over last n hours, where n = inputs["pDMS_Time"][y]
-		    	[t in setdiff(INTERIOR_SUBPERIODS,Down_Time_HOURS)], EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t] >= sum(vSHUT_FLECCS[y,i,e] for e=(t-gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]):t)
+		    	[t in setdiff(INTERIOR_SUBPERIODS,Down_Time_HOURS)], EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t] >= sum(vSHUT_FLECCS[y,i,e] for e=(t-dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]):t)
 
 		    	# cDownTimeWrap: If n is greater than the number of subperiods left in the period, constraint wraps around to first hour of time series
-		    	# cDownTimeWrap constraint equivalant to: EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,t] >= sum(vSHUT_FLECCS[y,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSHUT_FLECCS[y,e] for e=(hours_per_subperiod_max-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]-(t%hours_per_subperiod))):hours_per_subperiod_max)
-		    	[t in Down_Time_HOURS], EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t] >= sum(vSHUT_FLECCS[y,i,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSHUT_FLECCS[y,i,e] for e=((t+hours_per_subperiod-(t%hours_per_subperiod))-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]-(t%hours_per_subperiod))):(t+hours_per_subperiod-(t%hours_per_subperiod)))
+		    	# cDownTimeWrap constraint equivalant to: EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,t] >= sum(vSHUT_FLECCS[y,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSHUT_FLECCS[y,e] for e=(hours_per_subperiod_max-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]-(t%hours_per_subperiod))):hours_per_subperiod_max)
+		    	[t in Down_Time_HOURS], EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t] >= sum(vSHUT_FLECCS[y,i,e] for e=(t-((t%hours_per_subperiod)-1):t))+sum(vSHUT_FLECCS[y,i,e] for e=((t+hours_per_subperiod-(t%hours_per_subperiod))-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]-(t%hours_per_subperiod))):(t+hours_per_subperiod-(t%hours_per_subperiod)))
     
 		    	# cDownTimeStart:
 		    	# NOTE: Expression t+hours_per_subperiod-(t%hours_per_subperiod) is equivalant to "hours_per_subperiod_max"
-		    	[t in START_SUBPERIODS], EP[:eTotalCapFLECCS][y,i]/gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t]  >= vSHUT_FLECCS[y,i,t]+sum(vSHUT_FLECCS[y,i,e] for e=((t+hours_per_subperiod-1)-(gen_ccs[(gen_ccs[!,:R_ID].==y),:Down_Time][i]-1)):(t+hours_per_subperiod-1))
+		    	[t in START_SUBPERIODS], EP[:eTotalCapFLECCS][y,i]/dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]-vCOMMIT_FLECCS[y,i,t]  >= vSHUT_FLECCS[y,i,t]+sum(vSHUT_FLECCS[y,i,e] for e=((t+hours_per_subperiod-1)-(dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Down_Time][i]-1)):(t+hours_per_subperiod-1))
 		    end)
 	    end
 	end
 
 	## END Constraints for thermal units subject to integer (discrete) unit commitment decisions
+
+
+	##### CO2 emissioms
+
+	# CO2 from start up fuel
+	@expression(EP, eEmissionsByFLECCS_start[y in FLECCS_ALL, i in inputs["COMMIT_CCS"], t=1:T],
+	    	sum( inputs["CO2_per_Start_FLECCS"][y,i]*vSTART_FLECCS[y,i,t] for i in inputs["COMMIT_CCS"]))
+	
+	# Add CO2 from start up fuel and vented CO2
+	@expression(EP, eEmissionsByPlantFLECCS[y in FLECCS_ALL, t=1:T], sum(eEmissionsByFLECCS_start[y,i,t] for i in inputs["COMMIT_CCS"])+EP[:eCO2_vent][y,t])
+
+
+
 
 	return EP
 end

@@ -74,37 +74,29 @@ function co2_cap(EP::Model, inputs::Dict, setup::Dict)
 	end
 
 	### Expressions ###
-
-	# CO2 emissions for resources "y" during hour "t" [tons]
-	# if the model is using scaling, then vP is in GW;
+		# CO2 emissions 
 	@expression(EP, eEmissionsByPlant[y=1:G,t=1:T],
-	    if (setup["UCommit"] >= 1 & setup["PieceWiseHeatRate"] ==1)
-			if y in inputs["COMMIT"]
-				dfGen[!,:CO2_per_MMBTU][y]*EP[:vFuel][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y]) + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
-			else
-				dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y])
-			end
+	if setup["PieceWiseHeatRate"] ==1
+		if y in inputs["COMMIT"]
+			dfGen[!,:CO2_per_MMBTU][y]*EP[:vFuel][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y]) + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
 		else
-		    if y in inputs["COMMIT"]
-			    dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y]) + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
-		    else
-		     	dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y])
-	    	end
+			dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y])
 		end
-	)
+	else
+		if y in inputs["COMMIT"]
+			dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y]) + dfGen[!,:CO2_per_Start][y]*EP[:vSTART][y,t]
+		else
+			 dfGen[!,:CO2_per_MWh][y]*EP[:vP][y,t]*(1 - dfGen[!,:CO2_Capture_Rate][y])
+		end
+	end)
+
+
 
 	# CO2 emissions from FLECCS 
 	if setup["FLECCS"] >= 1
-		# CO2 from start up fuel
-	    @expression(EP, eEmissionsByFLECCS_start[y in FLECCS_ALL, i in inputs["COMMIT_CCS"], t=1:T],
-	    	sum( inputs["CO2_per_Start_FLECCS"][y,i]*EP[:vSTART_FLECCS][y,i,t] for i in inputs["COMMIT_CCS"]))
-		# Add CO2 from start up fuel and vented CO2
-	    @expression(EP, eEmissionsByPlantFLECCS[y in FLECCS_ALL, t=1:T], sum(eEmissionsByFLECCS_start[y,i,t] for i in inputs["COMMIT_CCS"])+EP[:eCO2_vent][y,t])
-
-		# Emissions per zone = sum of emissions from generators in the "generator_data.csv" and FLECCS
-	    @expression(EP, eEmissionsByZone[z=1:Z, t=1:T], sum(eEmissionsByPlant[y,t] for y in dfGen[(dfGen[!,:Zone].==z),:R_ID]) + sum(eEmissionsByPlantFLECCS[y,t] for y in unique(gen_ccs[(gen_ccs[!,:Zone].==z),:R_ID])))
+	    @expression(EP, eEmissionsByZone[z=1:Z, t=1:T], sum(EP[:eEmissionsByPlant][y,t] for y in dfGen[(dfGen[!,:Zone].==z),:R_ID]) + sum(EP[:eEmissionsByPlantFLECCS][y,t] for y in unique(gen_ccs[(gen_ccs[!,:Zone].==z),:R_ID])))
 	else
-		@expression(EP, eEmissionsByZone[z=1:Z, t=1:T], sum(eEmissionsByPlant[y,t] for y in dfGen[(dfGen[!,:Zone].==z),:R_ID]) )
+		@expression(EP, eEmissionsByZone[z=1:Z, t=1:T], sum(EP[:eEmissionsByPlant][y,t] for y in dfGen[(dfGen[!,:Zone].==z),:R_ID]) )
 	end
 
 

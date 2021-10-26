@@ -36,16 +36,7 @@ function energy_share_requirement(EP::Model, inputs::Dict, setup::Dict)
 
 	println("Energy Share Requirement Policies Module")
 
-	dfGen = inputs["dfGen"]
-
-	T = inputs["T"]     # Number of time steps (hours)
-	Z = inputs["Z"]     # Number of zones
-
 	## Energy Share Requirements (minimum energy share from qualifying renewable resources) constraint
-	if setup["EnergyShareRequirement"] >= 1
-		@constraint(EP, cESRShare[ESR=1:inputs["nESR"]], sum(inputs["omega"][t]*dfGen[!,Symbol("ESR_$ESR")][y]*EP[:vP][y,t] for y=dfGen[findall(x->x>0,dfGen[!,Symbol("ESR_$ESR")]),:R_ID], t=1:T) >=
-									sum(inputs["dfESR"][:,ESR][z]*inputs["omega"][t]*inputs["pD"][t,z] for t=1:T, z=findall(x->x>0,inputs["dfESR"][:,ESR]))+
-									sum(inputs["dfESR"][:,ESR][z]*setup["StorageLosses"]*sum(EP[:eELOSS][y] for y in intersect(dfGen[dfGen.Zone.==z,:R_ID],inputs["STOR_ALL"])) for z=findall(x->x>0,inputs["dfESR"][:,ESR])))
-	end
+	@constraint(EP, cESRShare[ESR=1:inputs["nESR"]], EP[:eESR][ESR] >= 0)
 	return EP
 end

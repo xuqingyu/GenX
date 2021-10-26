@@ -27,13 +27,17 @@ FLECCS6 = NGCC coupled  with DAC (MIT)
 FLECCS6 = Allam cycle coupled with CO2 storage
 """
 
-function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int)
+function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int, CapacityReserveMargin::Int, MinCapReq::Int)
 	# load FLECCS fixed and investment module
 	println("load FLECCS module")
 	# FLECCS 
+	dfGen_ccs = inputs["dfGen_ccs"]
 	FLECCS_ALL = inputs["FLECCS_ALL"]
 	COMMIT_ccs = inputs["COMMIT_CCS"]
 	NO_COMMIT_ccs = inputs["NO_COMMIT_CCS"]
+	
+	T = inputs["T"]     # Number of time steps (hours)
+	Z = inputs["Z"]     # Number of zones
 
 	#EP = FLECCS_fix(EP, inputs, FLECCS,  UCommit, Reserves)
 
@@ -60,6 +64,19 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 	if !isempty(COMMIT_ccs)
 		EP = fleccs_commit(EP, inputs, FLECCS,UCommit, Reserves)
 	end
+
+	# Capacity Reserves Margin policy
+	if CapacityReserveMargin == 1
+		@expression(EP, eCapResMarBalanceFLECCS[res=1:inputs["NCapacityReserveMargin"], t=1:T], sum(dfGen_ccs[y,Symbol("CapRes_$res")] * (EP[:eCCS_net][y,t])  for y in FLECCS_ALL))
+		EP[:eCapResMarBalance] += eCapResMarBalanceFLECCS
+	end
+
+	
+    if (MinCapReq == 1)
+        @expression(EP, eMinCapResFLECCS[mincap = 1:inputs["NumberOfMinCapReqs"]], sum(EP[:eTotalCap_FLECCS] for y in dfGen_ccs[(dfGen_ccs[!,Symbol("MinCapTag_$mincap")].== 1) ,:][!,:R_ID]))
+		EP[:eMinCapRes] += eMinCapResFLECCS
+	end
+	
 	
 
 

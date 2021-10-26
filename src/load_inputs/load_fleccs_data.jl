@@ -236,22 +236,6 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 	end
 
 
-	if setup["FLECCS"] == 1
-		println("FLECCS_data1.csv Successfully Read!, NGCC-CCS without flexible subcompoents")
-	elseif setup["FLECCS"] == 2
-		println("FLECCS_data2.csv Successfully Read!, NGCC-CCS coupled with solvent/sorbent storage")
-	elseif setup["FLECCS"] == 3
-		println("FLECCS_data3.csv Successfully Read!, NGCC-CCS coupled with thermal storage")
-	elseif setup["FLECCS"] == 4
-		println("FLECCS_data4.csv Successfully Read!, NGCC-CCS coupled with H2 generation and storage")
-	elseif setup["FLECCS"] == 5
-		println("FLECCS_data5.csv Successfully Read!, NGCC-CCS coupled with DAC (Gtech or Upitt)")
-	elseif setup["FLECCS"] == 6
-		println("FLECCS_data6.csv Successfully Read!, NGCC-CCS coupled with DAC (MIT)")
-	elseif setup["FLECCS"] == 7
-		println("FLECCS_data7.csv Successfully Read!, Allam cycle coupled with CO2 storage")
-	end
-
 
 
 	return inputs_ccs

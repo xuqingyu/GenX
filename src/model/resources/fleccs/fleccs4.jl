@@ -30,7 +30,7 @@ function fleccs4(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
     Z = inputs["Z"]     # Number of zones
     G_F = inputs["G_F"] # Number of FLECCS generator
 	FLECCS_ALL = inputs["FLECCS_ALL"] # set of FLECCS generator
-	gen_ccs = inputs["dfGen_ccs"] # FLECCS general data
+	dfGen_ccs = inputs["dfGen_ccs"] # FLECCS general data
 	FLECCS_parameters = inputs["FLECCS_parameters"] # FLECCS specific parameters
 	# get number of flexible subcompoents
 	N_F = inputs["N_F"]
@@ -44,7 +44,7 @@ function fleccs4(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
     hours_per_subperiod = inputs["hours_per_subperiod"]
 
-	fuel_type = collect(skipmissing(gen_ccs[!,:Fuel]))
+	fuel_type = collect(skipmissing(dfGen_ccs[!,:Fuel]))
 
 	fuel_CO2 = inputs["fuel_CO2"]
 	fuel_costs = inputs["fuel_costs"]
@@ -192,7 +192,7 @@ function fleccs4(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
 
 	# Power balance
-	@expression(EP, ePowerBalanceFLECCS[t=1:T, z=1:Z], sum(eCCS_net[y,t] for y in unique(gen_ccs[(gen_ccs[!,:Zone].==z),:R_ID])))
+	@expression(EP, ePowerBalanceFLECCS[t=1:T, z=1:Z], sum(eCCS_net[y,t] for y in unique(dfGen_ccs[(dfGen_ccs[!,:Zone].==z),:R_ID])))
 
 	# constraints:
 	# captured CO2 should be less than the eCO2_flue * maximum co2 capture rate
@@ -211,14 +211,14 @@ function fleccs4(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 	#min power constraints 
     #Maximum capacity constraints
 	# Min power generated for combustion TURBINE at hour "t"
-	#@constraint(EP, cMinGeneration_gt[y in FLECCS_ALL,t=1:T], vP_gt[y,t] >= gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][NGCT_id] *EP[:eTotalCapFLECCS][y,NGCT_id])
+	#@constraint(EP, cMinGeneration_gt[y in FLECCS_ALL,t=1:T], vP_gt[y,t] >= dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_power][NGCT_id] *EP[:eTotalCapFLECCS][y,NGCT_id])
     # Min power generated for steam TURBINE at hour "t"
-    #@constraint(EP, cMinGeneration_st[y in FLECCS_ALL,t=1:T], ePower_st[y,t] >=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][NGST_id]* EP[:eTotalCapFLECCS][y,NGST_id])
+    #@constraint(EP, cMinGeneration_st[y in FLECCS_ALL,t=1:T], ePower_st[y,t] >=   dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_power][NGST_id]* EP[:eTotalCapFLECCS][y,NGST_id])
     # Min Power used for compressing CO2 
-    #@constraint(EP, cMin_comp[y in FLECCS_ALL,t=1:T], ePower_use_comp[y,t] >=   gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][Comp_id]  *EP[:eTotalCapFLECCS][y,Comp_id])
+    #@constraint(EP, cMin_comp[y in FLECCS_ALL,t=1:T], ePower_use_comp[y,t] >=   dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_power][Comp_id]  *EP[:eTotalCapFLECCS][y,Comp_id])
     
 	# Min captured CO2  from adsorber at time t should be less than the capacity of capture unit [tonne CO2]
-	#@constraint(EP, cMinCapture[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] >=  gen_ccs[(gen_ccs[!,:R_ID].==y),:Min_power][PCC_id] * EP[:eTotalCapFLECCS][y,PCC_id] )
+	#@constraint(EP, cMinCapture[y in FLECCS_ALL,t=1:T], vCAPTURE[y,t] >=  dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Min_power][PCC_id] * EP[:eTotalCapFLECCS][y,PCC_id] )
 
 
 
@@ -287,23 +287,23 @@ function fleccs4(EP::Model, inputs::Dict,  FLECCS::Int, UCommit::Int, Reserves::
 
 	# start variable O&M
 	# variable O&M for all the teams: combustion turbine (or oxfuel power cycle)
-	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGCT_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
+	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==NGCT_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
 	# variable O&M for NGCC-based teams: VOM of steam turbine and co2 compressor
 	# variable O&M for steam turbine
-	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGST_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
+	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==NGST_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
 	 # variable O&M for compressor
-	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Comp_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
+	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Comp_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
 
 
 	# specfic variable O&M formulations for each team
 	# variable O&M for heat pump
-	@expression(EP,eCVar_heatpump[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== HeatPump_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(ePower_use_ts[y,t]))
+	@expression(EP,eCVar_heatpump[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== HeatPump_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(ePower_use_ts[y,t]))
 	# variable O&M for hot storage
-	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Hot_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_hot[y,t]))
+	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Hot_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_hot[y,t]))
 	# variable O&M for cold storage
-	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Cold_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_cold[y,t]))
+	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Cold_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_cold[y,t]))
 	# variable O&M for PCC
-	@expression(EP,eCVar_PCC[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== PCC_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
+	@expression(EP,eCVar_PCC[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== PCC_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
 
 
 	#adding up variable cost

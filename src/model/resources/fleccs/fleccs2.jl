@@ -30,7 +30,7 @@ function fleccs2(EP::Model, inputs::Dict, FLECCS::Int, UCommit::Int, Reserves::I
     Z = inputs["Z"]     # Number of zones
     G_F = inputs["G_F"] # Number of FLECCS generator
 	FLECCS_ALL = inputs["FLECCS_ALL"] # set of FLECCS generator
-	gen_ccs = inputs["dfGen_ccs"] # FLECCS general data
+	dfGen_ccs = inputs["dfGen_ccs"] # FLECCS general data
 	FLECCS_parameters = inputs["FLECCS_parameters"] # FLECCS specific parameters
 	# get number of flexible subcompoents
 	N_F = inputs["N_F"]
@@ -45,7 +45,7 @@ function fleccs2(EP::Model, inputs::Dict, FLECCS::Int, UCommit::Int, Reserves::I
 
     hours_per_subperiod = inputs["hours_per_subperiod"]
 
-	fuel_type = collect(skipmissing(gen_ccs[!,:Fuel]))
+	fuel_type = collect(skipmissing(dfGen_ccs[!,:Fuel]))
 
 	fuel_CO2 = inputs["fuel_CO2"]
 	fuel_costs = inputs["fuel_costs"]
@@ -138,7 +138,7 @@ function fleccs2(EP::Model, inputs::Dict, FLECCS::Int, UCommit::Int, Reserves::I
 	# NGCC-CCS net power output = vP_gt + ePower_st - ePower_use_comp - ePower_use_pcc
 	@expression(EP, eCCS_net[y in FLECCS_ALL,t=1:T], vP_gt[y,t] + ePower_st[y,t] - ePower_use_comp[y,t]- ePower_use_pcc[y,t] - ePower_use_other[y,t])
 
-	@expression(EP, ePowerBalanceFLECCS[t=1:T, z=1:Z], sum(eCCS_net[y,t] for y in unique(gen_ccs[(gen_ccs[!,:Zone].==z),:R_ID])))
+	@expression(EP, ePowerBalanceFLECCS[t=1:T, z=1:Z], sum(eCCS_net[y,t] for y in unique(dfGen_ccs[(dfGen_ccs[!,:Zone].==z),:R_ID])))
 
 	#solvent storage mass balance
 	# dynamic of rich solvent storage system, normal [tonne solvent/sorbent]
@@ -186,23 +186,23 @@ function fleccs2(EP::Model, inputs::Dict, FLECCS::Int, UCommit::Int, Reserves::I
 
 	# start variable O&M
 	# variable O&M for all the teams: combustion turbine (or oxfuel power cycle)
-	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGCT_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
+	@expression(EP,eCVar_gt[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==NGCT_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*vP_gt[y,t])
 	# variable O&M for NGCC-based teams: VOM of steam turbine and co2 compressor
 	# variable O&M for steam turbine
-	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].==NGST_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
+	@expression(EP,eCVar_st[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==NGST_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*ePower_st[y,t])
 	 # variable O&M for compressor
-	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Comp_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
+	@expression(EP,eCVar_comp[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Comp_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(eCO2_flue[y,t] - eCO2_vent[y,t]))
 
 
 	# specfic variable O&M formulations for each team
 	# variable O&M for rich solvent storage
-	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Rich_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_rich[y,t]))
+	@expression(EP,eCVar_rich[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Rich_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_rich[y,t]))
 	# variable O&M for lean solvent storage
-	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Lean_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_lean[y,t]))
+	@expression(EP,eCVar_lean[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Lean_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vSTORE_lean[y,t]))
 	# variable O&M for adsorber
-	@expression(EP,eCVar_absorber[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Absorber_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
+	@expression(EP,eCVar_absorber[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Absorber_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vCAPTURE[y,t]))
 	# variable O&M for regenerator
-	@expression(EP,eCVar_regen[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(gen_ccs[(gen_ccs[!,:FLECCS_NO].== Regen_id) .& (gen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vREGEN[y,t]))
+	@expression(EP,eCVar_regen[y in FLECCS_ALL, t = 1:T], inputs["omega"][t]*(dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].== Regen_id) .& (dfGen_ccs[!,:R_ID].==y),:Var_OM_Cost_per_Unit][1])*(vREGEN[y,t]))
 
 
 	#adding up variable cost
