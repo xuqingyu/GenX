@@ -21,21 +21,21 @@ Function for writing the diferent capacities for the FLECCS technologies (starti
 """
 function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 	# Capacity decisions
-	gen_ccs = inputs["dfGen_ccs"]
+	dfGen_ccs = inputs["dfGen_ccs"]
 	FLECCS_ALL = inputs["FLECCS_ALL"]
 	N_F = inputs["N_F"]
 	COMMIT_ccs  =inputs["COMMIT_CCS"]
 	# the number of rows for FLECCS generator 
-	#n = length(gen_ccs[!,"Resource"])/length(N_F)
+	#n = length(dfGen_ccs[!,"Resource"])/length(N_F)
 
     # the number of subcompoents 
 	N = length(N_F)
 
-	capFLECCS = zeros(size(gen_ccs[!,"Resource"]))
-    #reshape(zeros(size(gen_ccs[!,"Resource"])),length(FLECCS_ALL),length(N_F))
+	capFLECCS = zeros(size(dfGen_ccs[!,"Resource"]))
+    #reshape(zeros(size(dfGen_ccs[!,"Resource"])),length(FLECCS_ALL),length(N_F))
 	for y in inputs["NEW_CAP_FLECCS"]
 		for i in COMMIT_ccs
-			capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
+			capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
 		end
 
 		for i in setdiff(N_F,COMMIT_ccs)
@@ -43,12 +43,12 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 		end
 	end
 
-	retcapFLECCS = zeros(size(gen_ccs[!,"Resource"]))
+	retcapFLECCS = zeros(size(dfGen_ccs[!,"Resource"]))
 
 
 	for y in inputs["RET_CAP_FLECCS"]
 		for i in COMMIT_ccs
-			 retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])* gen_ccs[(gen_ccs[!,:R_ID].==y),:Cap_Size][i]
+			 retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
 		end
 
 		for i in setdiff(N_F,COMMIT_ccs)
@@ -59,7 +59,7 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 
 
 
-	EndCapFLECCS = zeros(size(gen_ccs[!,"Resource"]))
+	EndCapFLECCS = zeros(size(dfGen_ccs[!,"Resource"]))
 	for y in FLECCS_ALL
 		for i in N_F
 		    EndCapFLECCS[(y-1)*N+i] = value.(EP[:eTotalCapFLECCS])[y,i]
@@ -73,8 +73,8 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 
 
 	dfCapFLECCS = DataFrame(
-		Resource = gen_ccs[!,"Resource"], Zone = gen_ccs[!,:Zone],
-		StartCap = gen_ccs[!,:Existing_Cap_Unit],
+		Resource = dfGen_ccs[!,"Resource"], Zone = dfGen_ccs[!,:Zone],
+		StartCap = dfGen_ccs[!,:Existing_Cap_Unit],
 		RetCap = retcapFLECCS[:],
 		NewCap = capFLECCS[:],
 		EndCap = EndCapFLECCS,

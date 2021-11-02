@@ -104,8 +104,8 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
 
 	if setup["FLECCS"] >= 1
 		write_capacity_fleccs(path, sep, inputs, setup, EP)
-		#write_power_fleccs(path, sep, inputs, setup, EP)
-		write_output_fleccs(path, sep, inputs, setup, EP)
+		write_power_fleccs(path, sep, inputs, setup, EP)
+		#write_output_fleccs(path, sep, inputs, setup, EP)
 	end
 
 

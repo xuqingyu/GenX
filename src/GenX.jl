@@ -118,6 +118,7 @@ include("model/resources/thermal/piecewiseheatrate.jl")
 
 include("model/resources/fleccs/fleccs.jl")
 include("model/resources/fleccs/fleccs_fix.jl")
+include("model/resources/fleccs/fleccs1.jl")
 include("model/resources/fleccs/fleccs2.jl")
 include("model/resources/fleccs/fleccs3.jl")
 include("model/resources/fleccs/fleccs4.jl")

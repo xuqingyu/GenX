@@ -20,11 +20,12 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 The FLECCS module determines which flecce deisng should be implemented
 FLECCS1 = conventional NGCC-CCS
 FLECCS2 = NGCC coupled with solvent storate
-FLECCS3 = NGCC coupled with thermal storage
-FLECCS4 = NGCC coupled with H2 storage
-FLECCS5 = NGCC coupled with DAC (GT+Upitt)
-FLECCS6 = NGCC coupled  with DAC (MIT)
-FLECCS6 = Allam cycle coupled with CO2 storage
+FLECCS3 = NGCC coupled with thermal storage - option1 cold + hot storage
+FLECCS4 = NGCC coupled with thermal storage - option2 cold storage + heater for hot storage  
+FLECCS5 = NGCC coupled with H2 storage
+FLECCS6 = NGCC coupled with DAC (GT+Upitt)
+FLECCS7 = NGCC coupled  with DAC (MIT)
+FLECCS8 = Allam cycle coupled with CO2 storage
 """
 
 function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::Int, CapacityReserveMargin::Int, MinCapReq::Int)
@@ -55,6 +56,8 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 		EP = fleccs5(EP, inputs,  FLECCS, UCommit, Reserves)
 	elseif FLECCS ==6
 		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
+	elseif FLECCS ==8
+		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
 	end
 
 	if !isempty(NO_COMMIT_ccs)
@@ -70,7 +73,6 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 		@expression(EP, eCapResMarBalanceFLECCS[res=1:inputs["NCapacityReserveMargin"], t=1:T], sum(dfGen_ccs[y,Symbol("CapRes_$res")] * (EP[:eCCS_net][y,t])  for y in FLECCS_ALL))
 		EP[:eCapResMarBalance] += eCapResMarBalanceFLECCS
 	end
-
 	
     if (MinCapReq == 1)
         @expression(EP, eMinCapResFLECCS[mincap = 1:inputs["NumberOfMinCapReqs"]], sum(EP[:eTotalCap_FLECCS] for y in dfGen_ccs[(dfGen_ccs[!,Symbol("MinCapTag_$mincap")].== 1) ,:][!,:R_ID]))
@@ -81,7 +83,4 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 
 
 	return EP
-
-
-
 end
