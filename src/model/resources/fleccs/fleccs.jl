@@ -57,7 +57,7 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 	elseif FLECCS ==6
 		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
 	elseif FLECCS ==8
-		EP = fleccs6(EP, inputs, FLECCS, UCommit, Reserves)
+		EP = fleccs8(EP, inputs, FLECCS, UCommit, Reserves)
 	end
 
 	if !isempty(NO_COMMIT_ccs)

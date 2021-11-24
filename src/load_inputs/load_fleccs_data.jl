@@ -65,6 +65,17 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 	inputs_ccs["G_F"] = length(unique(dfGen_ccs[!,:R_ID]))
 	inputs_ccs["dfGen_ccs"] = dfGen_ccs
 	inputs_ccs["FLECCS_ALL"] = unique(dfGen_ccs[!,:R_ID])
+
+
+	if setup["ParameterScale"] ==1 
+		if setup["FLECCS"] == 8 
+			FLECCS_parameters[!,:intercept] = FLECCS_parameters[!,:intercept]//ModelScalingFactor
+		end
+	end
+
+
+
+
 	inputs_ccs["FLECCS_parameters"] = FLECCS_parameters
 
     # Set indices for internal use
@@ -254,7 +265,14 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 	elseif setup["FLECCS"] == 7
 		println("FLECCS_data6.csv Successfully Read!, NGCC-CCS coupled with DAC (MIT)")
 	elseif setup["FLECCS"] == 8
-		println("FLECCS_data7.csv Successfully Read!, Allam cycle coupled with CO2 storage")
+		println("FLECCS_data8.csv Successfully Read!, Allam cycle coupled with CO2 storage")
+		inputs_ccs["OXY_id"] = dfGen_ccs[(dfGen_ccs[!,:OXY].==1),:FLECCS_NO][1]
+	    # steam turbine
+	    inputs_ccs["ASU_id"] = dfGen_ccs[(dfGen_ccs[!,:ASU].==1),:FLECCS_NO][1]
+	    # PCC 
+	    inputs_ccs["LOX_id"] = dfGen_ccs[(dfGen_ccs[!,:LOX].==1),:FLECCS_NO][1]
+	    # compressor
+	    inputs_ccs["BOP_id"] = dfGen_ccs[(dfGen_ccs[!,:BOP].==1),:FLECCS_NO][1]
 	end
 
 
