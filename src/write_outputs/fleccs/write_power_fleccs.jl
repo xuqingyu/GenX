@@ -47,7 +47,7 @@ function write_power_fleccs(path::AbstractString, sep::AbstractString, inputs::D
 		for i in 1:G_F*N
 			dfPower_FLECCS[!,:AnnualSum][i] = sum(inputs["omega"].* (FLECCS_output[i,:])) * ModelScalingFactor
 		end
-		dfPower_FLECCS = hcat(dfPower_FLECCS, DataFrame(FLECCS_output, :auto))* ModelScalingFactor
+		dfPower_FLECCS = hcat(dfPower_FLECCS, DataFrame(FLECCS_output *ModelScalingFactor, :auto))
 	else
 		for i in 1:G_F*N
 			dfPower_FLECCS[!,:AnnualSum][i] = sum(inputs["omega"].* (FLECCS_output[i,:])) 
