@@ -33,9 +33,12 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 
 	capFLECCS = zeros(size(dfGen_ccs[!,"Resource"]))
     #reshape(zeros(size(dfGen_ccs[!,"Resource"])),length(FLECCS_ALL),length(N_F))
-	for y in inputs["NEW_CAP_FLECCS"]
-		for i in COMMIT_ccs
-			capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
+	
+	for y in FLECCS_ALL
+	    for i in inputs["NEW_CAP_FLECCS"]
+		    for i in COMMIT_ccs
+			    capFLECCS[(y-1)*N + i] = value(EP[:vCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==i),:Cap_Size][y]
+		    end
 		end
 
 		for i in setdiff(N_F,COMMIT_ccs)
@@ -45,10 +48,12 @@ function write_capacity_fleccs(path::AbstractString, sep::AbstractString, inputs
 
 	retcapFLECCS = zeros(size(dfGen_ccs[!,"Resource"]))
 
-
-	for y in inputs["RET_CAP_FLECCS"]
-		for i in COMMIT_ccs
-			 retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:R_ID].==y),:Cap_Size][i]
+	
+	for y in FLECCS_ALL
+	    for i in inputs["RET_CAP_FLECCS"]
+		    for i in COMMIT_ccs
+			     retcapFLECCS[(y-1)*N + i] = value(EP[:vRETCAP_FLECCS][y, i])* dfGen_ccs[(dfGen_ccs[!,:FLECCS_NO].==i),:Cap_Size][y]
+		    end
 		end
 
 		for i in setdiff(N_F,COMMIT_ccs)

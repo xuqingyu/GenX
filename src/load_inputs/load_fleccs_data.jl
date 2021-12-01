@@ -69,7 +69,7 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 
 	if setup["ParameterScale"] ==1 
 		if setup["FLECCS"] == 8 
-			FLECCS_parameters[!,:intercept] = FLECCS_parameters[!,:intercept]//ModelScalingFactor
+			FLECCS_parameters[!,:intercept] = FLECCS_parameters[!,:intercept]/ModelScalingFactor
 		end
 	end
 
@@ -89,9 +89,9 @@ function load_fleccs_data(setup::Dict, path::AbstractString, sep::AbstractString
 
 
 	# Set of all resources eligible for new capacity
-	inputs_ccs["NEW_CAP_FLECCS"] = intersect(dfGen_ccs[dfGen_ccs.New_Build.==1,:R_ID], dfGen_ccs[dfGen_ccs.Max_Cap_MW.!=0,:R_ID])
+	inputs_ccs["NEW_CAP_FLECCS"] = intersect(dfGen_ccs[dfGen_ccs.New_Build.==1,:FLECCS_NO], dfGen_ccs[dfGen_ccs.Max_Cap_MW.!=0,:FLECCS_NO])
 	# Set of all resources eligible for capacity retirements
-	inputs_ccs["RET_CAP_FLECCS"] = intersect(dfGen_ccs[dfGen_ccs.New_Build.!=-1,:R_ID], dfGen_ccs[dfGen_ccs.Existing_Cap_MW.>=0,:R_ID])
+	inputs_ccs["RET_CAP_FLECCS"] = intersect(dfGen_ccs[dfGen_ccs.New_Build.!=-1,:FLECCS_NO], dfGen_ccs[dfGen_ccs.Existing_Cap_MW.>=0,:FLECCS_NO])
 
 	# Zones resources are located in
 	zones = collect(skipmissing(dfGen_ccs[!,:Zone][1:inputs_ccs["n_F"]]))

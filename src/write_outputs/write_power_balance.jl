@@ -15,7 +15,13 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 function write_power_balance(path::AbstractString, sep::AbstractString, inputs::Dict, setup::Dict, EP::Model)
+	
+	if setup["FLECCS"] >= 1
+		dfGen_ccs = inputs["dfGen_ccs"]
+	end
+		
 	dfGen = inputs["dfGen"]
+	
 	T = inputs["T"]     # Number of time steps (hours)
 	Z = inputs["Z"]     # Number of zones
 	SEG = inputs["SEG"] # Number of load curtailment segments
@@ -27,11 +33,11 @@ function write_power_balance(path::AbstractString, sep::AbstractString, inputs::
 	dfPowerBalance = Array{Any}
 	rowoffset=3
 	for z in 1:Z
-	   	dfTemp1 = Array{Any}(nothing, T+rowoffset, 10)
+	   	dfTemp1 = Array{Any}(nothing, T+rowoffset, 11)
 	   	dfTemp1[1,1:size(dfTemp1,2)] = ["Generation", "Storage_Discharge", "Storage_Charge",
 	           "Flexible_Demand_Defer", "Flexible_Demand_Stasify",
 	           "Demand_Response", "Nonserved_Energy",
-			   "Transmission_NetExport", "Transmission_Losses",
+			   "Transmission_NetExport", "Transmission_Losses","FLECCS_Net_Generation",
 	           "Demand"]
 	   	dfTemp1[2,1:size(dfTemp1,2)] = repeat([z],size(dfTemp1,2))
 	   	for t in 1:T
@@ -57,6 +63,12 @@ function write_power_balance(path::AbstractString, sep::AbstractString, inputs::
 	     	dfTemp1[t+rowoffset,7] = value(EP[:vNSE][1,t,z])
 	     	dfTemp1[t+rowoffset,8] = 0
 	     	dfTemp1[t+rowoffset,9] = 0
+			if setup["FLECCS"] >= 1
+			    dfTemp1[t+rowoffset,10] = sum(value.(EP[:eCCS_net][y,t]) for y in unique(dfGen_ccs[(dfGen_ccs[!,:Zone].==z),:R_ID]))
+			else
+				dfTemp1[t+rowoffset,10] = 0 
+			end
+
 		#=
 	     	if setup["NetworkExpansion"] == 1
 	     	    dfTemp1[t+rowoffset,8] = value(EP[:ePowerBalanceNetExportFlows][t,z])
@@ -67,7 +79,7 @@ function write_power_balance(path::AbstractString, sep::AbstractString, inputs::
 			dfTemp1[t+rowoffset,8] = value(EP[:ePowerBalanceNetExportFlows][t,z])
 			dfTemp1[t+rowoffset,9] = -1/2 * value(EP[:eLosses_By_Zone][z,t])
 		end
-	     	dfTemp1[t+rowoffset,10] = -inputs["pD"][t,z]
+	     	dfTemp1[t+rowoffset,11] = -inputs["pD"][t,z]
 
 			if setup["ParameterScale"] == 1
 				dfTemp1[t+rowoffset,1] = dfTemp1[t+rowoffset,1] * ModelScalingFactor
@@ -80,6 +92,7 @@ function write_power_balance(path::AbstractString, sep::AbstractString, inputs::
 				dfTemp1[t+rowoffset,8] = dfTemp1[t+rowoffset,8] * ModelScalingFactor
 				dfTemp1[t+rowoffset,9] = dfTemp1[t+rowoffset,9] * ModelScalingFactor
 				dfTemp1[t+rowoffset,10] = dfTemp1[t+rowoffset,10] * ModelScalingFactor
+				dfTemp1[t+rowoffset,11] = dfTemp1[t+rowoffset,11] * ModelScalingFactor
 			end
 	   	end
 		if z==1

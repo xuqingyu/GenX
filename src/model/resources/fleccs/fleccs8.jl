@@ -133,6 +133,8 @@ function fleccs8(EP::Model, inputs::Dict, FLECCS::Int, UCommit::Int, Reserves::I
 		[y in FLECCS_ALL, i in BOP_id, t =1:T],vFLECCS_output[y,i,t] == eCCS_net[y,t]			
 	end)
 
+	@constraint(EP, [y in FLECCS_ALL], EP[:eTotalCapFLECCS][y, BOP_id] == EP[:eTotalCapFLECCS][y, OXY_id])
+
 
 
 	###########variable cost

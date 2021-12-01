@@ -64,6 +64,7 @@ function fleccs(EP::Model, inputs::Dict, FLECCS::Int,  UCommit::Int, Reserves::I
 		EP = fleccs_no_commit(EP, inputs, FLECCS, Reserves)
 	end
 
+
 	if !isempty(COMMIT_ccs)
 		EP = fleccs_commit(EP, inputs, FLECCS,UCommit, Reserves)
 	end

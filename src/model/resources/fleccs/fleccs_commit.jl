@@ -149,9 +149,6 @@ function fleccs_commit(EP::Model, inputs::Dict,FLECCS::Int,UCommit::Int,  Reserv
 	Z = inputs["Z"]     # Number of zones
 	G = inputs["G"]     # Number of resources
 
-	T = inputs["T"]     # Number of time steps (hours)
-    Z = inputs["Z"]     # Number of zones
-
 
 	FLECCS_ALL = inputs["FLECCS_ALL"] # set of FLECCS generator
 	N_F = inputs["N_F"] 	# get number of flexible subcompoents
