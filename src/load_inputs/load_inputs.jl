@@ -84,11 +84,9 @@ function load_inputs(setup::Dict, path::AbstractString)
     if setup["MinCapReq"] == 1
         inputs = load_minimum_capacity_requirement(path, sep, inputs, setup)
     end
-	if haskey(setup, "MaxCapReq")
-		if setup["MaxCapReq"] == 1
-			inputs = load_maximum_capacity_limit(path, sep, inputs, setup)
-		end
-	end
+    if setup["MaxCapReq"] == 1
+        inputs = load_maximum_capacity_limit(path, sep, inputs, setup)
+    end
     if setup["EnergyShareRequirement"] == 1
         inputs = load_energy_share_requirement(setup, path, sep, inputs)
     end
@@ -96,30 +94,20 @@ function load_inputs(setup::Dict, path::AbstractString)
     if setup["CO2Cap"] == 1
         inputs = load_co2_cap(setup, path, sep, inputs)
     end
-    if haskey(setup, "CO2GenRateCap")
-        if setup["CO2GenRateCap"] == 1
-            inputs = load_co2_generation_side_emission_rate_cap(setup, path, sep, inputs)
-        end
+    if setup["CO2GenRateCap"] == 1
+        inputs = load_co2_generation_side_emission_rate_cap(setup, path, sep, inputs)
     end
-    if haskey(setup, "CO2LoadRateCap")
-        if setup["CO2LoadRateCap"] == 1
-            inputs = load_co2_load_side_emission_rate_cap(setup, path, sep, inputs)
-        end
+    if setup["CO2LoadRateCap"] == 1
+        inputs = load_co2_load_side_emission_rate_cap(setup, path, sep, inputs)
     end
-    if haskey(setup, "CO2Tax")
-        if setup["CO2Tax"] >= 1
-            inputs = load_co2_tax(setup, path, sep, inputs)
-        end
+    if setup["CO2Tax"] == 1
+        inputs = load_co2_tax(setup, path, sep, inputs)
     end
-    if haskey(setup, "CO2Credit")
-        if setup["CO2Credit"] >= 1
-            inputs = load_co2_credit(setup, path, sep, inputs)
-        end
+    if setup["CO2Credit"] == 1
+        inputs = load_co2_credit(setup, path, sep, inputs)
     end
-    if haskey(setup, "TFS")
-        if setup["TFS"] == 1
-            inputs = load_twentyfourseven(setup, path, sep, inputs)
-        end
+    if setup["TFS"] == 1
+        inputs = load_twentyfourseven(setup, path, sep, inputs)
     end
 
 

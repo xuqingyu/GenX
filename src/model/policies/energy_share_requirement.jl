@@ -45,12 +45,7 @@ function energy_share_requirement(EP::Model, inputs::Dict, setup::Dict)
     # ESR Transmission loss
     # Consider transmission loss, the default is take transmission loss into consideration
     if Z > 1
-        if haskey(setup, "PolicyTransmissionLossCoverage")
-            if (setup["PolicyTransmissionLossCoverage"] == 1)
-                @expression(EP, eESRTLoss[ESR=1:inputs["nESR"]], sum(inputs["dfESR"][z, ESR] * inputs["omega"][t] * (1 / 2) * eTransLossByZone[z, t] for t = 1:T, z = findall(x -> x > 0, inputs["dfESR"][:, ESR])))
-                EP[:eESRRHS] += eESRTLoss
-            end
-        else
+        if (setup["PolicyTransmissionLossCoverage"] == 1)
             @expression(EP, eESRTLoss[ESR=1:inputs["nESR"]], sum(inputs["dfESR"][z, ESR] * inputs["omega"][t] * (1 / 2) * eTransLossByZone[z, t] for t = 1:T, z = findall(x -> x > 0, inputs["dfESR"][:, ESR])))
             EP[:eESRRHS] += eESRTLoss
         end
@@ -59,12 +54,7 @@ function energy_share_requirement(EP::Model, inputs::Dict, setup::Dict)
     # ESR Lossses
     # Consider storage loss, the default is take storage loss into consideration
     if !isempty(STOR_ALL)
-        if haskey(setup, "StorageLosses")
-            if setup["StorageLosses"] == 1
-                @expression(EP, eESRStor[ESR=1:inputs["nESR"]], sum(inputs["dfESR"][z, ESR] * EP[:eStorageLossByZone][z] for z = findall(x -> x > 0, inputs["dfESR"][:, ESR])))
-                EP[:eESRRHS] += eESRStor
-            end
-        else
+        if setup["StorageLosses"] == 1
             @expression(EP, eESRStor[ESR=1:inputs["nESR"]], sum(inputs["dfESR"][z, ESR] * EP[:eStorageLossByZone][z] for z = findall(x -> x > 0, inputs["dfESR"][:, ESR])))
             EP[:eESRRHS] += eESRStor
         end

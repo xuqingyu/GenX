@@ -86,12 +86,7 @@ function co2_load_side_emission_rate_cap(EP::Model, inputs::Dict, setup::Dict)
     
     if !isempty(STOR_ALL)
         # The default without the key is "StorageLosses" to include storage loss in the policy
-        if haskey(setup, "StorageLosses")
-            if (setup["StorageLosses"] == 1)
-                @expression(EP, eCO2Emissions_loadrate_RHS_STORLOSS[cap=1:inputs["NCO2LoadRateCap"]], sum(inputs["dfMaxCO2LoadRate"][z, cap] * EP[:eStorageLossByZone][z] for z in findall(x -> x == 1, inputs["dfCO2LoadRateCapZones"][:, cap])))
-                EP[:eCO2Emissions_loadrate_RHS] += EP[:eCO2Emissions_loadrate_RHS_STORLOSS]
-            end
-        else
+        if (setup["StorageLosses"] == 1)
             @expression(EP, eCO2Emissions_loadrate_RHS_STORLOSS[cap=1:inputs["NCO2LoadRateCap"]], sum(inputs["dfMaxCO2LoadRate"][z, cap] * EP[:eStorageLossByZone][z] for z in findall(x -> x == 1, inputs["dfCO2LoadRateCapZones"][:, cap])))
             EP[:eCO2Emissions_loadrate_RHS] += EP[:eCO2Emissions_loadrate_RHS_STORLOSS]
         end
@@ -100,12 +95,7 @@ function co2_load_side_emission_rate_cap(EP::Model, inputs::Dict, setup::Dict)
     
     if Z > 1
         # The default without the key "PolicyTransmissionLossCoverage" is to include transmission loss in the policy
-        if haskey(setup, "PolicyTransmissionLossCoverage")
-            if (setup["PolicyTransmissionLossCoverage"] == 1)
-                @expression(EP, eCO2Emissions_loadrate_RHS_TLOSS[cap=1:inputs["NCO2LoadRateCap"]], sum(inputs["dfMaxCO2LoadRate"][z, cap] * sum((1 / 2) * inputs["omega"][t] * EP[:eTransLossByZone][z, t] for t = 1:T) for z in findall(x -> x == 1, inputs["dfCO2LoadRateCapZones"][:, cap])))
-                EP[:eCO2Emissions_loadrate_RHS] += EP[:eCO2Emissions_loadrate_RHS_TLOSS]
-            end
-        else
+        if (setup["PolicyTransmissionLossCoverage"] == 1)
             @expression(EP, eCO2Emissions_loadrate_RHS_TLOSS[cap=1:inputs["NCO2LoadRateCap"]], sum(inputs["dfMaxCO2LoadRate"][z, cap] * sum((1 / 2) * inputs["omega"][t] * EP[:eTransLossByZone][z, t] for t = 1:T) for z in findall(x -> x == 1, inputs["dfCO2LoadRateCapZones"][:, cap])))
             EP[:eCO2Emissions_loadrate_RHS] += EP[:eCO2Emissions_loadrate_RHS_TLOSS]
         end
