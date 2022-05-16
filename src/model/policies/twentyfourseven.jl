@@ -38,16 +38,16 @@ function twentyfourseven!(EP::Model, inputs::Dict, setup::Dict)
 
     ## Define Expressions
     # Total generation of power plant that participants in the TEAC/24x7 program
-    @expression(EP, eCFE[rpsh = 1:NumberofTFS, t = 1:T], sum(dfGen[y, Symbol("RPSH_$rpsh")] * EP[:vP][y, t] for y in setdiff(ALLGEN, union(STOR_ALL, FLEX))))
+    @expression(EP, eCFE[rpsh = 1:NumberofTFS, t = 1:T], EP[:vZERO] + sum(dfGen[y, Symbol("RPSH_$rpsh")] * EP[:vP][y, t] for y in setdiff(ALLGEN, union(STOR_ALL, FLEX))))
     # Modified load: this is the load after the modification of the demand flexiblity and storage facilities;
     # In TEAC/24x7 framework, storage is at the load side
     @expression(EP, eModifiedload[rpsh = 1:NumberofTFS, t = 1:T], (inputs["TFS_Load"][t, rpsh] + EP[:vZERO]))
     if !isempty(STOR_ALL)
-        @expression(EP, eTFSStorage[rpsh = 1:NumberofTFS, t = 1:T], sum(dfGen[y, Symbol("RPSH_$rpsh")] * (EP[:vP][y, t] - EP[:vCHARGE][y, t]) for y in STOR_ALL))
+        @expression(EP, eTFSStorage[rpsh = 1:NumberofTFS, t = 1:T], sum(dfGen[y, Symbol("RPSH_$rpsh")] * (EP[:vP][y, t] - EP[:vCHARGE][y, t]) for y in STOR_ALL) - EP[:vZERO])
         EP[:eModifiedload] -= EP[:eTFSStorage]
     end
     if !isempty(FLEX)
-        @expression(EP, eTFSDR[rpsh = 1:NumberofTFS, t = 1:T], sum(dfGen[y, Symbol("RPSH_$rpsh")] * (EP[:vCHARGE_FLEX][y, t] - EP[:vP][y, t]) for y in FLEX))
+        @expression(EP, eTFSDR[rpsh = 1:NumberofTFS, t = 1:T], sum(dfGen[y, Symbol("RPSH_$rpsh")] * (EP[:vCHARGE_FLEX][y, t] - EP[:vP][y, t]) for y in FLEX) - EP[:vZERO])
         EP[:eModifiedload] -= EP[:eTFSDR]
     end
     @expression(EP, eConsumedCFE[rpsh = 1:NumberofTFS, t = 1:T], EP[:eCFE][rpsh, t] - EP[:vEX][rpsh, t] + ((1 - inputs["TFS_SFDT"][t, rpsh]) * EP[:vSF][rpsh, t]))
