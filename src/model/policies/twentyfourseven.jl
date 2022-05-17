@@ -15,9 +15,9 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 @doc raw"""
-	twentyfourseven!(EP::Model, inputs::Dict, setup::Dict)
+	twentyfourseven(EP::Model, inputs::Dict, setup::Dict)
 """
-function twentyfourseven!(EP::Model, inputs::Dict, setup::Dict)
+function twentyfourseven(EP::Model, inputs::Dict, setup::Dict)
     dfGen = inputs["dfGen"]
     println("Twenty-four Seven Module")
     NumberofTFS = inputs["NumberofTFS"]

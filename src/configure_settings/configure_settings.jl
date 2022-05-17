@@ -48,9 +48,9 @@ function configure_settings(settings_path::String)
     # CO2 capture credit; 0 = not active; 1 = active;
     set_default_if_absent!(settings, "CO2Credit", 0)    
     # Energy Share Requirement and CO2 constraints account for energy lost; 0 = not active (DO NOT account for energy lost); 1 = active systemwide (DO account for energy lost)
-    set_default_if_absent!(settings, "StorageLosses", 1)
+    set_default_if_absent!(settings, "StorageLosses", 0)
     # Energy Share Requirement and CO2 constraints account for transmission lost; 0 = not active (DO NOT account for transmission lost); 1 = active systemwide (DO account for transmission lost)
-    set_default_if_absent!(settings, "PolicyTransmissionLossCoverage", 1)
+    set_default_if_absent!(settings, "PolicyTransmissionLossCoverage", 0)
     # Activate minimum technology carveout constraints; 0 = not active; 1 = active
     set_default_if_absent!(settings, "MinCapReq", 0)
     # Activate maximum technology carveout constraints; 0 = not active; 1 = active
