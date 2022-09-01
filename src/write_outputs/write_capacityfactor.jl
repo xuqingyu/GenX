@@ -51,12 +51,13 @@ function write_capacityfactor(path::AbstractString, inputs::Dict, setup::Dict, E
             dfCapacityfactorVRESTOR.AnnualSum .= value.(EP[:vP_DC]) * dfGen_VRE_STOR[!,:EtaInverter] * inputs["omega"] * ModelScalingFactor
             dfCapacityfactorVRESTOR.Capacity .= value.(EP[:eTotalCap_VRE]) * ModelScalingFactor
         else
-            dfCapacityfactorVRESTOR.AnnualSum .= value.(EP[:vP_DC]) * dfGen_VRE_STOR[!,:EtaInverter]
+            dfCapacityfactorVRESTOR.AnnualSum .= value.(EP[:vP_DC]) * dfGen_VRE_STOR[!,:EtaInverter] * inputs["omega"]
             dfCapacityfactorVRESTOR.Capacity .= value.(EP[:eTotalCap_VRE])
         end
         # We only calculate the resulted capacity factor with total capacity > 1MW and total generation > 1MWh
-        EXISTING = intersect(findall(x -> x >= 1, dfCapacityfactorVRESTOR.AnnualSum), findall(x -> x >= 1, dfCapacityfactorVRESTOR.Capacity))
-        dfCapacityfactorVRESTOR.CapacityFactor[EXISTING] .= (dfCapacityfactorVRESTOR.AnnualSum[EXISTING] ./ dfCapacityfactorVRESTOR.Capacity[EXISTING]) / sum(inputs["omega"][t] for t in 1:T)
+        EXISTING_VRESTOR = intersect(findall(x -> x >= 1, dfCapacityfactorVRESTOR.AnnualSum), findall(x -> x >= 1, dfCapacityfactorVRESTOR.Capacity))
+        dfCapacityfactorVRESTOR.CapacityFactor[EXISTING_VRESTOR] .= (dfCapacityfactorVRESTOR.AnnualSum[EXISTING_VRESTOR] ./ dfCapacityfactorVRESTOR.Capacity[EXISTING_VRESTOR]) / sum(inputs["omega"][t] for t in 1:T)
+        dfCapacityfactor = vcat(dfCapacityfactor, dfCapacityfactorVRESTOR)
         CSV.write(joinpath(path, "vrestor_capacityfactor.csv"), dfCapacityfactorVRESTOR)
     end
 

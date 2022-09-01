@@ -90,6 +90,15 @@ function co2_generation_side_emission_rate_cap!(EP::Model, inputs::Dict, setup::
         # EP[:eGenerationByZone] += eGenerationByMustRun
         add_to_expression!.(EP[:eGenerationByZone], EP[:eGenerationByMustRun])
     end
+    ##CO2 Polcy Module Hybrid Generation by zone
+    if (setup["VreStor"] == 1)
+        dfGen_VRE_STOR = inputs["dfGen_VRE_STOR"]
+        VRE_STOR = inputs["VRE_STOR"]
+        @expression(EP, eGenerationByVRESTORE[z=1:Z, t=1:T], # the unit is GW
+            sum(EP[:vP_DC][y,t] for y in intersect(collect(1:VRE_STOR), dfGen_VRE_STOR[dfGen_VRE_STOR[!,:Zone].==z, :R_ID]))
+        )
+        add_to_expression!.(EP[:eGenerationByZone], EP[:eGenerationByVRESTORE])
+    end
     ### Constraints ###
 
     ## Generation + Rate-based: Emissions constraint in terms of rate (tons/MWh)

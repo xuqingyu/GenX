@@ -42,6 +42,11 @@ function cap_reserve_margin!(EP::Model, inputs::Dict, setup::Dict)
 	SEG = inputs["SEG"]
 	Z = inputs["Z"]
 	L = inputs["L"]
+	VRE_STOR = inputs["VRE_STOR"]
+	START_SUBPERIODS = inputs["START_SUBPERIODS"]
+	INTERIOR_SUBPERIODS = inputs["INTERIOR_SUBPERIODS"]
+	hours_per_subperiod = inputs["hours_per_subperiod"] #total number of hours per subperiod
+
 	println("Capacity Reserve Margin Policies Module")
 	### Variable
 	@variable(EP,vCapResSlack[res=1:NCRM, t=1:T]>=0)
@@ -101,7 +106,24 @@ function cap_reserve_margin!(EP::Model, inputs::Dict, setup::Dict)
 	# VRE-STOR 
 	if (setup["VreStor"] == 1)
 		dfGen_VRE_STOR = inputs["dfGen_VRE_STOR"]
-		@expression(EP, eMinCapResVREStor[res = 1:NCRM], sum(EP[:eTotalCap_VRE] for y in dfGen_VRE_STOR[(dfGen_VRE_STOR[!,Symbol("MinCapTag_$mincap")].== 1) ,:][!,:R_ID]))
+		@variable(EP, vCapContribution_VRE_STOR[y = 1:VRE_STOR, t = 1:T] >= 0)
+		@constraint(EP, cCapContributionLimit_SOC_VRE_STOR[y = 1:VRE_STOR, t = 1:T], 
+			if t in START_SUBPERIODS 
+				EP[:vCapContribution_VRE_STOR][y,t] <= dfGen_VRE_STOR[y,:EtaInverter] * (dfGen_VRE_STOR[y,:Eff_Down]*(EP[:vS_VRE_STOR][y,t+hours_per_subperiod-1]) + 
+					inputs["pP_Max_VRE_STOR"][y,t]*EP[:eTotalCap_VRE][y])
+			elseif t in INTERIOR_SUBPERIODS
+				EP[:vCapContribution_VRE_STOR][y,t] <= dfGen_VRE_STOR[y,:EtaInverter] * (dfGen_VRE_STOR[y,:Eff_Down]*(EP[:vS_VRE_STOR][y,t-1]) + 
+					inputs["pP_Max_VRE_STOR"][y,t]*EP[:eTotalCap_VRE][y]) 
+			end
+		)
+		@constraint(EP, cCapContributionLimit_Cap_VRE_STOR[y = 1:VRE_STOR, t = 1:T], 
+			EP[:vCapContribution_VRE_STOR][y,t] <= dfGen_VRE_STOR[y,:EtaInverter] * (dfGen_VRE_STOR[y,:Power_To_Energy_Ratio]*EP[:eTotalCap_STOR][y] + 
+				inputs["pP_Max_VRE_STOR"][y,t]*EP[:eTotalCap_VRE][y])
+		)
+		@constraint(EP, cCapContributionLimit_Grid_VRE_STOR[y = 1:VRE_STOR, t = 1:T], 
+			EP[:vCapContribution_VRE_STOR][y,t] <= EP[:eTotalCap_GRID][y]
+		)
+		@expression(EP, eMinCapResVREStor[res = 1:NCRM], sum(dfGen_VRE_STOR[y, Symbol("CapRes_$res")] * EP[:vCapContribution_VRE_STOR][y] for y in VRE_STOR))
 		add_to_expression!.(EP[:eCapResMarBalance], EP[:eMinCapResVREStor])
 	end
 

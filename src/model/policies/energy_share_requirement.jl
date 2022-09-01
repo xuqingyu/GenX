@@ -69,6 +69,11 @@ function energy_share_requirement!(EP::Model, inputs::Dict, setup::Dict)
 		dfGen_VRE_STOR = inputs["dfGen_VRE_STOR"]
 		@expression(EP, eESRVREStor[ESR=1:inputs["nESR"]], sum(inputs["omega"][t]*dfGen_VRE_STOR[!,Symbol("ESR_$ESR")][y]*EP[:vP_DC][y,t]*dfGen_VRE_STOR[!,:EtaInverter][y] for y=dfGen_VRE_STOR[findall(x->x>0,dfGen_VRE_STOR[!,Symbol("ESR_$ESR")]),:R_ID], t=1:T))
         add_to_expression!.(EP[:eESR], EP[:eESRVREStor])
+        if (setup["StorageLosses"] == 1)
+            @expression(EP, eESRVREStorLoss[ESR=1:inputs["nESR"]], 
+                sum(inputs["dfESR"][z,Symbol("ESR_$ESR")] * EP[:eStorageLossByZone_VRE_STOR][z] for z = 1:Z))
+            add_to_expression!.(EP[:eESR], -1, EP[:eESRVREStorLoss])
+        end
 	end
 
     # Considering transmission losses

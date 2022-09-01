@@ -37,7 +37,16 @@ function maximum_capacity_limit!(EP::Model, inputs::Dict, setup::Dict)
 
     @expression(EP, eMaxCapResInvest[maxcap = 1:NumberOfMaxCapReqs], sum(dfGen[y,Symbol("MaxCapTag_$maxcap")] * EP[:eTotalCap][y] for y in 1:G))
     add_to_expression!.(EP[:eMaxCapRes], EP[:eMaxCapResInvest])
-
+	
+    # VRE-STOR 
+	# Assuming the VRE is the main component of the facility
+	if (setup["VreStor"] == 1)
+		VRE_STOR = inputs["VRE_STOR"]
+		dfGen_VRE_STOR = inputs["dfGen_VRE_STOR"]
+		@expression(EP, eMaxCapResVREStor[maxcap = 1:NumberOfMaxCapReqs], 
+			sum(dfGen_VRE_STOR[y, Symbol("MaxCapTag_$maxcap")] * EP[:eTotalCap_VRE][y] for y in 1:VRE_STOR))
+		add_to_expression!.(EP[:eMaxCapRes], EP[:eMaxCapResVREStor])
+	end
     ### Constraint ###
     @constraint(EP, cZoneMaxCapReq[maxcap = 1:NumberOfMaxCapReqs], EP[:eMaxCapRes][maxcap] <= inputs["MaxCapReq"][maxcap] + EP[:vMaxCap_slack][maxcap])
 

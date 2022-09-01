@@ -129,7 +129,7 @@ function storage_all!(EP::Model, inputs::Dict, setup::Dict)
 	
 	# added VRE storage module
 	@expression(EP, eStorageLossByZone[z=1:Z],
-		sum(EP[:eELOSS][y] for y in intersect(inputs["STOR_ALL"], dfGen[dfGen[!,:Zone].==z,:R_ID])) + sum(EP[:eELOSS_VRE_STOR][y] for y in 1:inputs["VRE_STOR"], inputs["dfGen_VRE_STOR"][inputs["dfGen_VRE_STOR"][!,:Zone].==z,:R_ID])
+		sum(EP[:eELOSS][y] for y in intersect(inputs["STOR_ALL"], dfGen[dfGen[!,:Zone].==z,:R_ID]))
 	)
 end
 

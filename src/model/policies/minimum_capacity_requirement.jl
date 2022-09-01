@@ -43,9 +43,12 @@ function minimum_capacity_requirement!(EP::Model, inputs::Dict, setup::Dict)
 	add_to_expression!.(EP[:eMinCapRes], EP[:eMinCapResInvest])
 
 	# VRE-STOR 
+	# Assuming the VRE is the main component of the facility
 	if (setup["VreStor"] == 1)
+		VRE_STOR = inputs["VRE_STOR"]
 		dfGen_VRE_STOR = inputs["dfGen_VRE_STOR"]
-		@expression(EP, eMinCapResVREStor[mincap = 1:inputs["NumberOfMinCapReqs"]], sum(EP[:eTotalCap_VRE] for y in dfGen_VRE_STOR[(dfGen_VRE_STOR[!,Symbol("MinCapTag_$mincap")].== 1) ,:][!,:R_ID]))
+		@expression(EP, eMinCapResVREStor[mincap = 1:NumberOfMinCapReqs], 
+			sum(dfGen_VRE_STOR[y, Symbol("MinCapTag_$mincap")] * EP[:eTotalCap_VRE][y] for y in 1:VRE_STOR))
 		add_to_expression!.(EP[:eMinCapRes], EP[:eMinCapResVREStor])
 	end
 

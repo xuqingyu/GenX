@@ -15,10 +15,10 @@ received this license file.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 @doc raw"""
-	vre_stor(EP::Model, inputs::Dict, Reserves::Int, MinCapReq::Int, EnergyShareRequirement::Int, CapacityReserveMargin::Int)
+	vre_stor!(EP::Model, inputs::Dict, setup::Dict)
 
 """
-function vre_stor(EP::Model, inputs::Dict, Reserves::Int, MinCapReq::Int, EnergyShareRequirement::Int, CapacityReserveMargin::Int, StorageLosses::Int)
+function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
 
 	println("VRE-Storage Module")
 
@@ -120,7 +120,9 @@ function vre_stor(EP::Model, inputs::Dict, Reserves::Int, MinCapReq::Int, Energy
     
     # Energy losses related to technologies (increase in effective demand)
     @expression(EP, eELOSS_VRE_STOR[y=1:VRE_STOR], sum(inputs["omega"][t]*(vCHARGE_DC[y,t]/dfGen_VRE_STOR[!,:EtaInverter][y] - vDISCHARGE_DC[y,t]/dfGen_VRE_STOR[!,:EtaInverter][y]) for t in 1:T))
-   
+    @expression(EP, eStorageLossByZone_VRE_STOR[z=1:Z],
+        sum(EP[:eELOSS_VRE_STOR][y] for y in intersect(collect(1:VRE_STOR), dfGen_VRE_STOR[dfGen_VRE_STOR[!,:Zone].==z,:R_ID]))
+    )
     ### Objective Function Expressions ###
 
     # Investment costs for VRE-STOR resources
@@ -159,10 +161,8 @@ function vre_stor(EP::Model, inputs::Dict, Reserves::Int, MinCapReq::Int, Energy
 	## Power Balance Expressions ##
 
 	@expression(EP, ePowerBalance_VRE_STOR[t=1:T, z=1:Z],
-	sum(vP_VRE_STOR[y,t]-vCHARGE_VRE_STOR[y,t] for y=dfGen_VRE_STOR[(dfGen_VRE_STOR[!,:Zone].==z),:][!,:R_ID]))
-
-	EP[:ePowerBalance] += ePowerBalance_VRE_STOR
-
+	    sum(vP_VRE_STOR[y,t]-vCHARGE_VRE_STOR[y,t] for y=dfGen_VRE_STOR[(dfGen_VRE_STOR[!,:Zone].==z),:R_ID]))
+    add_to_expression!.(EP[:ePowerBalance], EP[:ePowerBalance_VRE_STOR])
     ## Module Expressions ##
 
     # DC exports
