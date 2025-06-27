@@ -90,23 +90,29 @@ function investment_energy!(EP::Model, inputs::Dict, setup::Dict)
         end)
 
     ## Objective Function Expressions ##
-
-    # Fixed costs for resource "y" = annuitized investment cost plus fixed O&M costs
-    # If resource is not eligible for new energy capacity, fixed costs are only O&M costs
-    @expression(EP, eCFixEnergy[y in STOR_ALL],
-        if y in NEW_CAP_ENERGY # Resources eligible for new capacity
-            inv_cost_per_mwhyr(gen[y]) * vCAPENERGY[y] +
-            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y]
-        else
-            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y]
-        end)
+    
+    # Annuitized investment cost expression for energy capacity - only applies to resources eligible for new energy capacity
     @expression(EP, eCInvEnergy[y in STOR_ALL],
-        if y in NEW_CAP_ENERGY # Resources eligible for new capacity
+        if y in NEW_CAP_ENERGY
             inv_cost_per_mwhyr(gen[y]) * vCAPENERGY[y]
         else
             0
         end)
-    @expression(EP, eCFomEnergy[y in STOR_ALL], fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y])
+    
+    # Fixed O&M cost expression for energy capacity - applies to all resources based on total energy capacity
+    @expression(EP, eCFomEnergy[y in STOR_ALL], 
+        fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y])
+    
+    # Total fixed cost expression for energy capacity - combines investment and fixed O&M costs
+    @expression(EP, eCFixEnergy[y in STOR_ALL],
+        if y in NEW_CAP_ENERGY
+            # For resources with new energy capacity: investment cost + fixed O&M cost
+            EP[:eCInvEnergy][y] + EP[:eCFomEnergy][y]
+        else
+            # For existing resources: only fixed O&M cost
+            EP[:eCFomEnergy][y]
+        end)
+    
     # Sum individual resource contributions to fixed costs to get total fixed costs
     @expression(EP, eTotalCFixEnergy, sum(EP[:eCFixEnergy][y] for y in STOR_ALL))
     @expression(EP, eTotalCInvEnergy, sum(EP[:eCInvEnergy][y] for y in STOR_ALL))
