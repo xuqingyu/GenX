@@ -131,11 +131,6 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 
     dfCost[!, Symbol("Total")] = total_cost
 
-    # #isn't this supposed to be the last step?
-    # if setup["ParameterScale"] == 1
-    #     dfCost.Total *= ModelScalingFactor^2
-    # end
-
     if setup["UCommit"] >= 1
         dfCost[6, 2] = value(EP[:eTotalCStart]) + value(EP[:eTotalCFuelStart])
     end
@@ -184,15 +179,6 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
     if setup["ParameterScale"] == 1
         dfCost.Total *= ModelScalingFactor^2
     end
-    # if setup["ParameterScale"] == 1
-    #     dfCost[6, 2] *= ModelScalingFactor^2
-    #     dfCost[7, 2] *= ModelScalingFactor^2
-    #     dfCost[8, 2] *= ModelScalingFactor^2
-    #     dfCost[9, 2] *= ModelScalingFactor^2
-    #     dfCost[10, 2] *= ModelScalingFactor^2
-    #     dfCost[11, 2] *= ModelScalingFactor^2
-    #     dfCost[12, 2] *= ModelScalingFactor^2
-    # end
 
     for z in 1:Z
         tempCTotal = 0.0
@@ -305,42 +291,29 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 
             # Investment Costs
             eCInv_VRE_STOR = 0.0
-            SOLAR_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_SOLAR"])
             if !isempty(SOLAR_ZONE_VRE_STOR)
                 eCInv_VRE_STOR += sum(value.(EP[:eCInvSolar][SOLAR_ZONE_VRE_STOR]))
             end
-            WIND_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_WIND"])
             if !isempty(WIND_ZONE_VRE_STOR)
                 eCInv_VRE_STOR += sum(value.(EP[:eCInvWind][WIND_ZONE_VRE_STOR]))
             end
-            ELEC_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_ELEC"])
             if !isempty(ELEC_ZONE_VRE_STOR)
                 eCInv_VRE_STOR += sum(value.(EP[:eCInvElec][ELEC_ZONE_VRE_STOR]))
             end
-            DC_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_DC"])
             if !isempty(DC_ZONE_VRE_STOR)
                 eCInv_VRE_STOR += sum(value.(EP[:eCInvDC][DC_ZONE_VRE_STOR]))
             end
-            STOR_ALL_ZONE_VRE_STOR = intersect(inputs["VS_STOR"], Y_ZONE_VRE_STOR)
             if !isempty(STOR_ALL_ZONE_VRE_STOR)
                 eCInv_VRE_STOR += sum(value.(EP[:eCInvEnergy_VS][STOR_ALL_ZONE_VRE_STOR]))
-                DC_CHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_DC_CHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(DC_CHARGE_ALL_ZONE_VRE_STOR)
                     eCInv_VRE_STOR += sum(value.(EP[:eCInvCharge_DC][DC_CHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                DC_DISCHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_DC_DISCHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(DC_DISCHARGE_ALL_ZONE_VRE_STOR)
                     eCInv_VRE_STOR += sum(value.(EP[:eCInvDischarge_DC][DC_DISCHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                AC_DISCHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_AC_DISCHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(AC_DISCHARGE_ALL_ZONE_VRE_STOR)
                     eCInv_VRE_STOR += sum(value.(EP[:eCInvDischarge_AC][AC_DISCHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                AC_CHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_AC_CHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(AC_CHARGE_ALL_ZONE_VRE_STOR)
                     eCInv_VRE_STOR += sum(value.(EP[:eCInvCharge_AC][AC_CHARGE_ALL_ZONE_VRE_STOR]))
                 end
@@ -349,42 +322,29 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 
             # Fom Costs
             eCFom_VRE_STOR = 0.0
-            SOLAR_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_SOLAR"])
             if !isempty(SOLAR_ZONE_VRE_STOR)
                 eCFom_VRE_STOR += sum(value.(EP[:eCFomSolar][SOLAR_ZONE_VRE_STOR]))
             end
-            WIND_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_WIND"])
             if !isempty(WIND_ZONE_VRE_STOR)
                 eCFom_VRE_STOR += sum(value.(EP[:eCFomWind][WIND_ZONE_VRE_STOR]))
             end
-            ELEC_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_ELEC"])
             if !isempty(ELEC_ZONE_VRE_STOR)
                 eCFom_VRE_STOR += sum(value.(EP[:eCFomElec][ELEC_ZONE_VRE_STOR]))
             end
-            DC_ZONE_VRE_STOR = intersect(Y_ZONE_VRE_STOR, inputs["VS_DC"])
             if !isempty(DC_ZONE_VRE_STOR)
                 eCFom_VRE_STOR += sum(value.(EP[:eCFomDC][DC_ZONE_VRE_STOR]))
             end
-            STOR_ALL_ZONE_VRE_STOR = intersect(inputs["VS_STOR"], Y_ZONE_VRE_STOR)
             if !isempty(STOR_ALL_ZONE_VRE_STOR)
                 eCFom_VRE_STOR += sum(value.(EP[:eCFomEnergy_VS][STOR_ALL_ZONE_VRE_STOR]))
-                DC_CHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_DC_CHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(DC_CHARGE_ALL_ZONE_VRE_STOR)
                     eCFom_VRE_STOR += sum(value.(EP[:eCFomCharge_DC][DC_CHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                DC_DISCHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_DC_DISCHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(DC_DISCHARGE_ALL_ZONE_VRE_STOR)
                     eCFom_VRE_STOR += sum(value.(EP[:eCFomDischarge_DC][DC_DISCHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                AC_DISCHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_AC_DISCHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(AC_DISCHARGE_ALL_ZONE_VRE_STOR)
                     eCFom_VRE_STOR += sum(value.(EP[:eCFomDischarge_AC][AC_DISCHARGE_ALL_ZONE_VRE_STOR]))
                 end
-                AC_CHARGE_ALL_ZONE_VRE_STOR = intersect(inputs["VS_ASYM_AC_CHARGE"],
-                    Y_ZONE_VRE_STOR)
                 if !isempty(AC_CHARGE_ALL_ZONE_VRE_STOR)
                     eCFom_VRE_STOR += sum(value.(EP[:eCFomCharge_AC][AC_CHARGE_ALL_ZONE_VRE_STOR]))
                 end
