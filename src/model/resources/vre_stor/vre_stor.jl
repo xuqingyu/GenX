@@ -855,8 +855,6 @@ function wind_vre_stor!(EP::Model, inputs::Dict, setup::Dict)
         end)
 
     # 2. Objective function additions
-
-    ## Objective Function Expressions ##
     
     # Annuitized investment cost expression for wind capacity - only applies to resources eligible for new wind capacity
     @expression(EP, eCInvWind[y in WIND],
