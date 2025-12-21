@@ -101,6 +101,13 @@ function load_network_data!(setup::Dict, path::AbstractString, inputs_nw::Dict)
         inputs_nw["NO_EXPANSION_LINES"] = findall(inputs_nw["pMax_Line_Reinforcement"] .< 0)
     end
 
+    if setup["PowerFlowDirectionRequirement"] == 1
+        # inputs_nw["PositiveFlowLines"] = findall(inputs_nw["DirectionReq"] .== 1)
+        inputs_nw["PositiveFlowLines"] = findall(as_vector(:DirectionReq) .== 1)
+        # inputs_nw["NegativeFlowLines"] = findall(inputs_nw["DirectionReq"] .== 2)
+        inputs_nw["NegativeFlowLines"] = findall(as_vector(:DirectionReq) .== 2)
+    end
+
     println(filename * " Successfully Read!")
 
     return network_var

@@ -98,6 +98,10 @@ function transmission!(EP::Model, inputs::Dict, setup::Dict)
     TRANS_LOSS_SEGS = inputs["TRANS_LOSS_SEGS"] # Number of segments used in piecewise linear approximations quadratic loss functions - can only take values of TRANS_LOSS_SEGS =1, 2
     LOSS_LINES = inputs["LOSS_LINES"] # Lines for which loss coefficients apply (are non-zero);
 
+    if setup["PowerFlowDirectionRequirement"] == 1
+        PositiveFlowLines = inputs["PositiveFlowLines"]
+        NegativeFlowLines = inputs["NegativeFlowLines"]
+    end
     ### Variables ###
 
     # Power flow on each transmission line "l" at hour "t"
@@ -318,4 +322,11 @@ function transmission!(EP::Model, inputs::Dict, setup::Dict)
                 for t in 1:T, z in ALL_DF_ESR[ESR]))
         add_similar_to_expression!(EP[:eESR], -1.0, eESRTran)
     end
+
+    # Transmission Flow Direction Requirement
+    if setup["PowerFlowDirectionRequirement"] == 1
+        @constraint(EP, cFlowPositiveReq[l in PositiveFlowLines, t = 1:T], EP[:vFLOW][l, t] >=0)
+        @constraint(EP, cFlowNegativeReq[l in NegativeFlowLines, t = 1:T], EP[:vFLOW][l, t] <=0)
+    end
+
 end
