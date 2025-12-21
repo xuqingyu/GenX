@@ -109,6 +109,12 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
         println(elapsed_time_nse)
     end
 
+    if output_settings_d["WriteDemand"]
+        elapsed_time_demand = @elapsed write_demand(path, inputs, setup, EP)
+        println("Time elapsed for writing demand is")
+        println(elapsed_time_demand)
+    end
+
     if output_settings_d["WritePowerBalance"]
         elapsed_time_power_balance = @elapsed write_power_balance(path, inputs, setup, EP)
         println("Time elapsed for writing power balance is")

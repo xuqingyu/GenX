@@ -122,6 +122,7 @@ function default_writeoutput()
         "WriteMinCapReq" => true,
         "WriteNetRevenue" => true,
         "WriteNSE" => true,
+        "WriteDemand" => true,
         "WriteNWExpansion" => true,
         "WriteOpWrapLDSdStor" => true,
         "WriteOpWrapLDSStorInit" => true,
