@@ -746,6 +746,8 @@ mga(r::AbstractResource) = get(r, :mga, default_zero)
 esr(r::AbstractResource; tag::Int64) = get(r, Symbol("esr_$tag"), default_zero)
 min_cap(r::AbstractResource; tag::Int64) = get(r, Symbol("min_cap_$tag"), default_zero)
 max_cap(r::AbstractResource; tag::Int64) = get(r, Symbol("max_cap_$tag"), default_zero)
+min_cf(r::AbstractResource; tag::Int64) = get(r, Symbol("min_cf_$tag"), default_zero)
+
 function derating_factor(r::AbstractResource; tag::Int64)
     get(r, Symbol("derating_factor_$tag"), default_zero)
 end

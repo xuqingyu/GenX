@@ -354,6 +354,32 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             end
         end
 
+        dfMinCFRev = DataFrame()
+        if setup["MinCFReq"] == 1 && has_duals(EP)
+            dfMinCF = DataFrame()
+            if output_settings_d["WriteMinCFPrices"] ||
+               output_settings_d["WriteMinCFRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_mincf_prices = @elapsed dfMinCF = write_mincf_prices(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing mincf prices is")
+                println(elapsed_time_mincf_prices)
+            end
+
+            if output_settings_d["WriteMinCFRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_mincf_revenue = @elapsed dfMinCFRev = write_mincf_revenue(path,
+                    inputs,
+                    setup,
+                    dfPower,
+                    dfMinCF,
+                    EP)
+                println("Time elapsed for writing mincf revenue is")
+                println(elapsed_time_mincf_revenue)
+            end
+        end
+
+
         dfResRevenue = DataFrame()
         if setup["CapacityReserveMargin"] == 1 && has_duals(EP)
             if output_settings_d["WriteReserveMargin"]

@@ -116,6 +116,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         create_empty_expression!(EP, :eMinCapRes, inputs["NumberOfMinCapReqs"])
     end
 
+    if setup["MinCFReq"] == 1
+        create_empty_expression!(EP, :eMinCFRes, inputs["NumberOfMinCFReqs"])
+    end
+
     if setup["MaxCapReq"] == 1
         create_empty_expression!(EP, :eMaxCapRes, inputs["NumberOfMaxCapReqs"])
     end
@@ -242,6 +246,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
 
     if (setup["MinCapReq"] == 1)
         minimum_capacity_requirement!(EP, inputs, setup)
+    end
+
+    if (setup["MinCFReq"] == 1)
+        minimum_capacity_factor_requirement!(EP, inputs, setup)
     end
 
     if setup["MaxCapReq"] == 1

@@ -39,7 +39,8 @@ function default_settings()
         "SystemFolder" => "system",
         "PoliciesFolder" => "policies",
         "ObjScale" => 1,
-        "PowerFlowDirectionRequirement" => 0)
+        "PowerFlowDirectionRequirement" => 0,
+        "MinCFReq" => 0)
 end
 
 @doc raw"""
@@ -120,6 +121,8 @@ function default_writeoutput()
         "WriteMaintenance" => true,
         "WriteMaxCapReq" => true,
         "WriteMinCapReq" => true,
+        "WriteMinCFPrices" => true,
+        "WriteMinCFRevenue" => true,
         "WriteNetRevenue" => true,
         "WriteNSE" => true,
         "WriteDemand" => true,

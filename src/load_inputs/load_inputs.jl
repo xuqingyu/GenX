@@ -85,6 +85,10 @@ function load_inputs(setup::Dict, path::AbstractString)
     inputs["VirtualChargeDischargeCost"] = setup["VirtualChargeDischargeCost"] /
                                            scale_factor
 
+    if setup["MinCFReq"] == 1
+        load_minimum_capacityfactor_requirement!(policies_path, inputs, setup)
+    end
+
     println("CSV Files Successfully Read In From $path")
 
     return inputs

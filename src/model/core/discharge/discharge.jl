@@ -60,4 +60,12 @@ function discharge!(EP::Model, inputs::Dict, setup::Dict)
             for y in QUALIFIED_SUPPLY_BY_ZONE[z]))
         add_similar_to_expression!(EP[:eHM], eHMDischarge)
     end
+
+    # Minimum Capacity Factor Constraints
+    if setup["MinCFReq"] == 1
+        @expression(EP, eMinCFDischarge[nmin_cf = 1:inputs["NumberOfMinCFReqs"]],
+            +sum(inputs["omega"][t] * min_cf(gen[y], tag = nmin_cf) * EP[:vP][y, t]
+            for y in ids_with_policy(gen, min_cf, tag = nmin_cf), t in 1:T))
+        add_similar_to_expression!(EP[:eMinCFRes], eMinCFDischarge)
+    end
 end
