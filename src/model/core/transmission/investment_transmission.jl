@@ -109,6 +109,9 @@ function investment_transmission!(EP::Model, inputs::Dict, setup::Dict)
         @constraint(EP,
             cMaxLineReinforcement[l in EXPANSION_LINES],
             vNEW_TRANS_CAP[l]<=inputs["pMax_Line_Reinforcement"][l])
+        @constraint(EP,
+            cMinLineReinforcement[l in EXPANSION_LINES],
+            vNEW_TRANS_CAP[l]>=inputs["pMin_Line_Reinforcement"][l])
     end
     #END network expansion contraints
 

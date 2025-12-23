@@ -66,6 +66,10 @@ function load_network_data!(setup::Dict, path::AbstractString, inputs_nw::Dict)
         inputs_nw["pMax_Line_Reinforcement"] = map(x -> max(0, x),
             to_floats(:Line_Max_Reinforcement_MW)) / scale_factor # convert to GW
         inputs_nw["pTrans_Max_Possible"] += inputs_nw["pMax_Line_Reinforcement"]
+
+        ensure_column!(network_var, "Line_Min_Reinforcement_MW", 0)
+        inputs_nw["pMin_Line_Reinforcement"] = map(x -> max(0, x),
+            to_floats(:Line_Min_Reinforcement_MW)) / scale_factor
     end
 
     # Multi-Stage
