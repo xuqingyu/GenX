@@ -40,6 +40,7 @@ function default_settings()
         "PoliciesFolder" => "policies",
         "ObjScale" => 1,
         "PowerFlowDirectionRequirement" => 0,
+        "LineMinCF" => 0,
         "MinCFReq" => 0)
 end
 
