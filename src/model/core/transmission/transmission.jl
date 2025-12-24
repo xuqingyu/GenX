@@ -327,6 +327,14 @@ function transmission!(EP::Model, inputs::Dict, setup::Dict)
     if setup["PowerFlowDirectionRequirement"] == 1
         @constraint(EP, cFlowPositiveReq[l in PositiveFlowLines, t = 1:T], EP[:vFLOW][l, t] >=0)
         @constraint(EP, cFlowNegativeReq[l in NegativeFlowLines, t = 1:T], EP[:vFLOW][l, t] <=0)
+        if setup["LineMinCF"] == 1
+            @constraint(EP, cFlowPositiveCFLimit[l in PositiveFlowLines], 
+            sum(EP[:vFLOW][l, t] * inputs["omega"][t] for t in 1:T) 
+            - inputs["LineMinCF"][l] * EP[:eAvail_Trans_Cap][l] * sum(inputs["omega"])>=0)
+            @constraint(EP, cFlowNegativeCFLimit[l in NegativeFlowLines], 
+            -sum(EP[:vFLOW][l, t] * inputs["omega"][t] for t in 1:T) 
+            - inputs["LineMinCF"][l] * EP[:eAvail_Trans_Cap][l] * sum(inputs["omega"])>=0)
+        end
     end
 
 end
