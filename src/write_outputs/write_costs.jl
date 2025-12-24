@@ -33,6 +33,11 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
     if !isempty(ELECTROLYZER_ALL)
         push!(cost_list, "cHydrogenRevenue")
     end
+    if setup["PowerFlowDirectionRequirement"] == 1
+        if setup["LineHurdleRate"] == 1
+            push!(cost_list, "cTransVOM") # add one more row
+        end
+    end
     dfCost = DataFrame(Costs = cost_list)
 
     cVar = value(EP[:eTotalCVarOut]) +
@@ -92,6 +97,12 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
 
     if !isempty(ELECTROLYZER_ALL)
         push!(total_cost, -1 * value(EP[:eTotalHydrogenValue]))
+    end
+
+    if setup["PowerFlowDirectionRequirement"] == 1
+        if setup["LineHurdleRate"] == 1
+            push!(total_cost, value(EP[:eTotalCTransVOM])) # add one more row
+        end
     end
 
     dfCost[!, Symbol("Total")] = total_cost
@@ -345,6 +356,12 @@ function write_costs(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
         if !isempty(ELECTROLYZER_ALL)
             push!(temp_cost_list, tempHydrogenValue)
         end
+
+        if setup["PowerFlowDirectionRequirement"] == 1
+            if setup["LineHurdleRate"] == 1
+                push!(temp_cost_list, "-") # add one more row
+            end
+        end        
 
         dfCost[!, Symbol("Zone$z")] = temp_cost_list
     end

@@ -109,9 +109,14 @@ function load_network_data!(setup::Dict, path::AbstractString, inputs_nw::Dict)
         # inputs_nw["PositiveFlowLines"] = findall(inputs_nw["DirectionReq"] .== 1)
         inputs_nw["PositiveFlowLines"] = findall(as_vector(:DirectionReq) .== 1)
         # inputs_nw["NegativeFlowLines"] = findall(inputs_nw["DirectionReq"] .== 2)
-        inputs_nw["NegativeFlowLines"] = findall(as_vector(:DirectionReq) .== 2)
+        inputs_nw["NegativeFlowLines"] = findall(as_vector(:DirectionReq) .== -1)
+        inputs_nw["Direction_Multiplier"] = to_floats(:DirectionReq)
         if setup["LineMinCF"] == 1
             inputs_nw["LineMinCF"] = to_floats(:LineMinCF)
+        end
+        if setup["LineHurdleRate"] == 1
+            inputs_nw["HurdleRate"] = to_floats(:HurdleRate)/scale_factor 
+            # convert to million $/GW/yr with objective function in millions
         end
     end
 

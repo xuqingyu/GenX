@@ -335,6 +335,17 @@ function transmission!(EP::Model, inputs::Dict, setup::Dict)
             -sum(EP[:vFLOW][l, t] * inputs["omega"][t] for t in 1:T) 
             - inputs["LineMinCF"][l] * EP[:eAvail_Trans_Cap][l] * sum(inputs["omega"])>=0)
         end
+
+        if setup["LineHurdleRate"] == 1
+            # Variable costs of "transmission" for resource "l" during hour "t" = variable O&M
+            @expression(EP,
+                eCTransVOM[l = 1:L, t = 1:T],
+                ((inputs["HurdleRate"][l]) * (inputs["Direction_Multiplier"][l]) * EP[:vFLOW][l, t]))
+            # Sum individual line contributions to variable discharging costs to get total variable discharging costs
+            @expression(EP, eTotalCTransVOM_T[t = 1:T], sum(eCTransVOM[l, t] for l = 1:L))
+            @expression(EP, eTotalCTransVOM, sum(inputs["omega"][t]*eTotalCTransVOM_T[t] for t in 1:T))
+            add_to_expression!(EP[:eObj], eTotalCTransVOM)
+        end
     end
 
 end
