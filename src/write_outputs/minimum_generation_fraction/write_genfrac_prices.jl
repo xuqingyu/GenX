@@ -6,11 +6,11 @@ function write_genfrac_prices(path::AbstractString, inputs::Dict, setup::Dict, E
     end
 
     if haskey(inputs, "MinGenFractionPriceCap")
-        dfMinGenFrac[!, :MinGenFractio_AnnualSlack] = convert(Array{Float64}, value.(EP[:vMinGenFraction_slack]))
-        dfMinGenFrac[!, :MinGenFractio_AnnualPenalty] = convert(Array{Float64}, value.(EP[:eCMinGenFractionSlack]))
+        dfMinGenFrac[!, :MinGenFrac_AnnualSlack] = convert(Array{Float64}, value.(EP[:vMinGenFraction_slack]))
+        dfMinGenFrac[!, :MinGenFrac_AnnualPenalty] = convert(Array{Float64}, value.(EP[:eCMinGenFractionSlack]))
         if setup["ParameterScale"] == 1
-            dfMinGenFrac[!, :MinGenFractio_AnnualSlack] *= ModelScalingFactor # Converting GWh to MWh
-            dfMinGenFrac[!, :MinGenFractio_AnnualPenalty] *= (ModelScalingFactor^2) # Converting MillionUSD to USD
+            dfMinGenFrac[!, :MinGenFrac_AnnualSlack] *= ModelScalingFactor # Converting GWh to MWh
+            dfMinGenFrac[!, :MinGenFrac_AnnualPenalty] *= (ModelScalingFactor^2) # Converting MillionUSD to USD
         end
     end
     CSV.write(joinpath(path, "MinGenFraction_prices_and_penalties.csv"), dfMinGenFrac)
