@@ -40,6 +40,7 @@ function default_settings()
         "PoliciesFolder" => "policies",
         "ObjScale" => 1,
         "PowerFlowDirectionRequirement" => 0,
+        "MinGenFraction" => 0,
         "MinCFReq" => 0)
 end
 
@@ -123,6 +124,8 @@ function default_writeoutput()
         "WriteMinCapReq" => true,
         "WriteMinCFPrices" => true,
         "WriteMinCFRevenue" => true,
+        "WriteMinGenFractionPrices" => true,
+        "WriteMinGenFractionRevenue" => true,
         "WriteNetRevenue" => true,
         "WriteNSE" => true,
         "WriteDemand" => true,

@@ -379,6 +379,30 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             end
         end
 
+        dfMinGenFracRev = DataFrame()
+        if setup["MinGenFraction"] == 1 && has_duals(EP)
+            dfMinGenFrac = DataFrame()
+            if output_settings_d["WriteMinGenFractionPrices"] ||
+               output_settings_d["WriteMinGenFractionRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_mingf_prices = @elapsed dfMinGenFrac = write_genfrac_prices(path, 
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing mingf prices is")
+                println(elapsed_time_mingf_prices)
+            end
+
+            if output_settings_d["WriteMinGenFractionRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_mingf_revenue = @elapsed dfMinGenFracRev = write_genfrac_revenue_cost(path,
+                    inputs,
+                    setup,
+                    dfPower,
+                    dfMinGenFrac,
+                    EP)
+                println("Time elapsed for writing mingf revenue is")
+                println(elapsed_time_mingf_revenue)
+            end
+        end        
 
         dfResRevenue = DataFrame()
         if setup["CapacityReserveMargin"] == 1 && has_duals(EP)

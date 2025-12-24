@@ -120,6 +120,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         create_empty_expression!(EP, :eMinCFRes, inputs["NumberOfMinCFReqs"])
     end
 
+    if setup["MinGenFraction"] == 1
+        create_empty_expression!(EP, :eMinGenFracRes, inputs["NumberOfMinGenFraction"])
+    end
+
     if setup["MaxCapReq"] == 1
         create_empty_expression!(EP, :eMaxCapRes, inputs["NumberOfMaxCapReqs"])
     end
@@ -250,6 +254,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
 
     if (setup["MinCFReq"] == 1)
         minimum_capacity_factor_requirement!(EP, inputs, setup)
+    end
+
+    if (setup["MinGenFraction"] == 1)
+        minimum_generation_fraction!(EP, inputs, setup)
     end
 
     if setup["MaxCapReq"] == 1
