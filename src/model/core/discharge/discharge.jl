@@ -82,5 +82,12 @@ function discharge!(EP::Model, inputs::Dict, setup::Dict)
         add_similar_to_expression!(EP[:eMinGenFracRes], eMinGenFractionDenominator)        
     end
 
+    # Minimum Capacity Factor Constraints
+    if setup["MinUtilRate"] == 1
+        @expression(EP, eMinURDischarge[nmin_ur = 1:inputs["NumberOfMinURReqs"]],
+            +sum(inputs["omega"][t] * min_utilrate(gen[y], tag = nmin_ur) * EP[:vP][y, t]
+            for y in ids_with_policy(gen, min_utilrate, tag = nmin_ur), t in 1:T))
+        add_similar_to_expression!(EP[:eMinUtilRateRes], eMinURDischarge)
+    end
     
 end

@@ -42,6 +42,7 @@ function default_settings()
         "PowerFlowDirectionRequirement" => 0,
         "MinGenFraction" => 0,
         "LineMinCF" => 0,
+        "MinUtilRate" => 0,
         "MinCFReq" => 0)
 end
 
@@ -127,6 +128,8 @@ function default_writeoutput()
         "WriteMinCFRevenue" => true,
         "WriteMinGenFractionPrices" => true,
         "WriteMinGenFractionRevenue" => true,
+        "WriteMinUtilRatePrices" => true,
+        "WriteMinUtilRateRevenue" => true,
         "WriteNetRevenue" => true,
         "WriteNSE" => true,
         "WriteDemand" => true,

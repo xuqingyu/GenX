@@ -751,6 +751,8 @@ min_cf(r::AbstractResource; tag::Int64) = get(r, Symbol("min_cf_$tag"), default_
 min_genfrac_num(r::AbstractResource; tag::Int64) = get(r, Symbol("min_gf_num_$tag"), default_zero)
 min_genfrac_den(r::AbstractResource; tag::Int64) = get(r, Symbol("min_gf_den_$tag"), default_zero)
 
+min_utilrate(r::AbstractResource; tag::Int64) = get(r, Symbol("min_ur_$tag"), default_zero)
+
 function derating_factor(r::AbstractResource; tag::Int64)
     get(r, Symbol("derating_factor_$tag"), default_zero)
 end

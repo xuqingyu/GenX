@@ -93,6 +93,10 @@ function load_inputs(setup::Dict, path::AbstractString)
         load_minimum_generation_fraction!(policies_path, inputs, setup)
     end
 
+    if setup["MinUtilRate"] == 1
+        load_minimum_utilizationrate!(policies_path, inputs, setup)
+    end
+
     println("CSV Files Successfully Read In From $path")
 
     return inputs

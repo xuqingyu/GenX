@@ -379,6 +379,31 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             end
         end
 
+        dfMinUtilRateRev = DataFrame()
+        if setup["MinUtilRate"] == 1 && has_duals(EP)
+            dfMinUtilRate = DataFrame()
+            if output_settings_d["WriteMinUtilRatePrices"] ||
+               output_settings_d["WriteMinUtilRateRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_minur_prices = @elapsed dfMinUtilRate = write_utilrate_prices(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing min util rate prices is")
+                println(elapsed_time_minur_prices)
+            end
+
+            if output_settings_d["WriteMinUtilRateRevenue"] || output_settings_d["WriteNetRevenue"]
+                elapsed_time_minur_revenue = @elapsed dfMinUtilRateRev = write_utilrate_revenue(path,
+                    inputs,
+                    setup,
+                    dfPower,
+                    dfMinUtilRate,
+                    EP)
+                println("Time elapsed for writing min util rate revenue is")
+                println(elapsed_time_minur_revenue)
+            end
+        end
+
         dfMinGenFracRev = DataFrame()
         if setup["MinGenFraction"] == 1 && has_duals(EP)
             dfMinGenFrac = DataFrame()

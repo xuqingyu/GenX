@@ -124,6 +124,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         create_empty_expression!(EP, :eMinGenFracRes, inputs["NumberOfMinGenFraction"])
     end
 
+    if setup["MinUtilRate"] == 1
+        create_empty_expression!(EP, :eMinUtilRateRes, inputs["NumberOfMinURReqs"])
+    end
+
     if setup["MaxCapReq"] == 1
         create_empty_expression!(EP, :eMaxCapRes, inputs["NumberOfMaxCapReqs"])
     end
@@ -258,6 +262,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
 
     if (setup["MinGenFraction"] == 1)
         minimum_generation_fraction!(EP, inputs, setup)
+    end
+
+    if setup["MinUtilRate"] == 1
+        minimum_utilizationrate!(EP, inputs, setup)
     end
 
     if setup["MaxCapReq"] == 1
