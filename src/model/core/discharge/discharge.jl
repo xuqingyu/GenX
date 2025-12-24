@@ -79,7 +79,7 @@ function discharge!(EP::Model, inputs::Dict, setup::Dict)
         @expression(EP, eMinGenFractionDenominator[nmin_gf = 1:inputs["NumberOfMinGenFraction"]],
             -sum(inputs["omega"][t] * min_genfrac_den(gen[y], tag = nmin_gf) * EP[:vP][y, t]
             for y in ids_with_policy(gen, min_genfrac_den, tag = nmin_gf), t in 1:T)*inputs["MinGenFraction"][nmin_gf])
-        add_similar_to_expression!(EP[:eMinGenFracRes], eMinGenFractionNumerator)        
+        add_similar_to_expression!(EP[:eMinGenFracRes], eMinGenFractionDenominator)        
     end
 
     

@@ -29,11 +29,11 @@ function write_genfrac_revenue_cost(path::AbstractString,
         derated_annual_net_generation = dfPower[1:G, :AnnualSum] .* (
             min_genfrac_num.(gen, tag = i)-min_genfrac_den.(gen, tag = i)*inputs["MinGenFraction"][i])
         derated_annual_net_generation[FUSION] .+= thermal_fusion_annual_parasitic_power(EP, inputs, setup) .* (
-                min_genfrac_num.(gen, tag = i)-min_genfrac_den.(gen, tag = i)*inputs["MinGenFraction"][i])
+                min_genfrac_num.(gen[FUSION], tag = i)-min_genfrac_den.(gen[FUSION], tag = i)*inputs["MinGenFraction"][i])
         revenue = derated_annual_net_generation * price
         dfMinGenFracRev[!, mingf_col] = revenue
     end
-    dfMinGenFracRev.Total = sum(eachcol(dfMinGenFracRev[:, 6:(NumberOfMinCFReqs + 5)]))
+    dfMinGenFracRev.Total = sum(eachcol(dfMinGenFracRev[:, 6:(NumberOfMinGenFraction + 5)]))
     CSV.write(joinpath(path, "MinGenFraction_Revenue_Cost.csv"), dfMinGenFracRev)
     return dfMinGenFracRev
 end
