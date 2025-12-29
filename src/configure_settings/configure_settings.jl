@@ -42,6 +42,7 @@ function default_settings()
         "PowerFlowDirectionRequirement" => 0,
         "MinGenFraction" => 0,
         "LineMinCF" => 0,
+        "LineHurdleRate" => 0,
         "MinUtilRate" => 0,
         "MinCFReq" => 0)
 end
