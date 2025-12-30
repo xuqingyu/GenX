@@ -30,6 +30,7 @@ function configure_solver(solver_settings_path::String, optimizer::Any; solver_n
         "cplex" => configure_cplex,
         "clp" => configure_clp,
         "cbc" => configure_cbc,
+        "copt" => configure_copt,
         "scip" => configure_scip)
 
     return configure_functions[solver_name](path, optimizer)

@@ -1,0 +1,9 @@
+# COPT Solver Parameters
+# Common solver settings
+TimeLimit: 110000             # Limits total time solver.
+Pre_Solve: 2                  # Controls presolve level.
+LPMethod: 2                     # Algorithm used to solve continuous models (including MIP root relaxation).
+CutLevel: 2
+
+#COPT-specific solver settings
+NumericFocus: 0               # Numerical precision emphasis.
