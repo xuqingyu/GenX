@@ -44,6 +44,7 @@ function default_settings()
         "LineMinCF" => 0,
         "LineHurdleRate" => 0,
         "MinUtilRate" => 0,
+        "NarrowVariability" => 0,
         "MinCFReq" => 0)
 end
 

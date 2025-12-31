@@ -709,6 +709,9 @@ function min_cofire_start_cols(r::AbstractResource; tag::Int64)
     get(r, Symbol(string("fuel", tag, "_min_cofire_level_start")), default_zero)
 end
 
+#variability
+maxvar(r::AbstractResource) = get(r, :MaxVar, "None") # if var cannot be found, then set as None
+
 # Reservoir hydro and storage
 const default_percent = 1.0
 efficiency_up(r::T) where {T <: Union{Hydro, Storage}} = get(r, :eff_up, default_percent)

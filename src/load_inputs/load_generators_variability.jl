@@ -13,22 +13,32 @@ function load_generators_variability!(setup::Dict, path::AbstractString, inputs:
     filename = "Generators_variability.csv"
     gen_var = load_dataframe(joinpath(my_dir, filename))
 
-    all_resources = inputs["RESOURCE_NAMES"]
 
-    existing_variability = names(gen_var)
-    for r in all_resources
-        if r ∉ existing_variability
-            @info "assuming availability of 1.0 for resource $r."
-            ensure_column!(gen_var, r, 1.0)
+    if setup["NarrowVariability"] == 0
+        all_resources = inputs["RESOURCE_NAMES"]        
+        existing_variability = names(gen_var)
+        for r in all_resources
+            if r ∉ existing_variability
+                @info "assuming availability of 1.0 for resource $r."
+                ensure_column!(gen_var, r, 1.0)
+            end
+        end
+
+        # Reorder DataFrame to R_ID order
+        select!(gen_var, [:Time_Index; Symbol.(all_resources)])
+        # Maximum power output and variability of each energy resource
+        inputs["pP_Max"] = transpose(Matrix{Float64}(gen_var[1:inputs["T"],
+            2:(inputs["G"] + 1)]))
+    else
+        inputs["pP_Max"] = ones(inputs["G"],inputs["T"])
+        for nonvar in ("None",)
+            ensure_column!(gen_var, nonvar, 1.0)
+        end
+        for i in 1:inputs["G"]
+            r = inputs["RESOURCES"][i]
+            inputs["pP_Max"][i,:] = transpose(Matrix{Float64}(select!(gen_var,maxvar(r))))
         end
     end
-
-    # Reorder DataFrame to R_ID order
-    select!(gen_var, [:Time_Index; Symbol.(all_resources)])
-
-    # Maximum power output and variability of each energy resource
-    inputs["pP_Max"] = transpose(Matrix{Float64}(gen_var[1:inputs["T"],
-        2:(inputs["G"] + 1)]))
 
     println(filename * " Successfully Read!")
 end
