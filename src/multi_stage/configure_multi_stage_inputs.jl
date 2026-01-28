@@ -115,8 +115,14 @@ function configure_multi_stage_inputs(inputs_d::Dict,
         # 2. Update fixed O&M costs to account for the possibility of more than 1 year between two model stages
         # NOTE: Although the "yr" suffix is still in use in these parameter names, they now represent total costs incured in each stage, which may be multiple years
         gen.fixed_om_cost_per_mwyr = fixed_om_cost_per_mwyr.(gen) .* OPEXMULT
+        gen.fixed_amt_cost_per_mwyr = fixed_amt_cost_per_mwyr.(gen) .* OPEXMULT
+        gen.fixed_subsidy_per_mwyr = fixed_subsidy_per_mwyr.(gen) .* OPEXMULT        
         gen.fixed_om_cost_per_mwhyr = fixed_om_cost_per_mwhyr.(gen) .* OPEXMULT
+        gen.fixed_amt_cost_per_mwhyr = fixed_amt_cost_per_mwhyr.(gen) .* OPEXMULT
+        gen.fixed_subsidy_per_mwhyr = fixed_subsidy_per_mwhyr.(gen) .* OPEXMULT        
         gen.fixed_om_cost_charge_per_mwyr = fixed_om_cost_charge_per_mwyr.(gen) .* OPEXMULT
+        gen.fixed_amt_cost_charge_per_mwyr = fixed_amt_cost_charge_per_mwyr.(gen) .* OPEXMULT
+        gen.fixed_subsidy_charge_per_mwyr = fixed_subsidy_charge_per_mwyr.(gen) .* OPEXMULT
 
         # Conduct 1. and 2. for any co-located VRE-STOR resources
         if !isempty(inputs_d["VRE_STOR"])

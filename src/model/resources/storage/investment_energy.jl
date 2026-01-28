@@ -96,9 +96,13 @@ function investment_energy!(EP::Model, inputs::Dict, setup::Dict)
     @expression(EP, eCFixEnergy[y in STOR_ALL],
         if y in NEW_CAP_ENERGY # Resources eligible for new capacity
             inv_cost_per_mwhyr(gen[y]) * vCAPENERGY[y] +
-            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y]
+            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y] + 
+            fixed_amt_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y] -
+            fixed_subsidy_per_mwhyr(gen[y]) * eTotalCapEnergy[y]  
         else
-            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y]
+            fixed_om_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y]+ 
+            fixed_amt_cost_per_mwhyr(gen[y]) * eTotalCapEnergy[y] -
+            fixed_subsidy_per_mwhyr(gen[y]) * eTotalCapEnergy[y] 
         end)
 
     # Sum individual resource contributions to fixed costs to get total fixed costs

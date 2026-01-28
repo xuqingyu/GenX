@@ -119,9 +119,13 @@ function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
     @expression(EP, eCGrid[y in VRE_STOR],
         if y in NEW_CAP # Resources eligible for new capacity
             inv_cost_per_mwyr(gen[y]) * EP[:vCAP][y] +
-            fixed_om_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y]
+            fixed_om_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y] +
+            fixed_amt_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y] -
+            fixed_subsidy_per_mwyr(gen[y]) * EP[:eTotalCap][y]
         else
-            fixed_om_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y]
+            fixed_om_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y] +
+            fixed_amt_cost_per_mwyr(gen[y]) * EP[:eTotalCap][y] -
+            fixed_subsidy_per_mwyr(gen[y]) * EP[:eTotalCap][y]
         end)
     @expression(EP, eTotalCGrid, sum(eCGrid[y] for y in VRE_STOR))
 

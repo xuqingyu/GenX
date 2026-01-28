@@ -116,13 +116,19 @@ function investment_discharge!(EP::Model, inputs::Dict, setup::Dict)
         if y in NEW_CAP # Resources eligible for new capacity (Non-Retrofit)
             if y in COMMIT
                 inv_cost_per_mwyr(gen[y]) * cap_size(gen[y]) * vCAP[y] +
-                fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y]
+                fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y] +
+                fixed_amt_cost_per_mwyr(gen[y]) * eTotalCap[y] -
+                fixed_subsidy_per_mwyr(gen[y]) * eTotalCap[y]
             else
                 inv_cost_per_mwyr(gen[y]) * vCAP[y] +
-                fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y]
+                fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y] +
+                fixed_amt_cost_per_mwyr(gen[y]) * eTotalCap[y] -
+                fixed_subsidy_per_mwyr(gen[y]) * eTotalCap[y]
             end
         else
-            fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y]
+            fixed_om_cost_per_mwyr(gen[y]) * eTotalCap[y] +
+            fixed_amt_cost_per_mwyr(gen[y]) * eTotalCap[y] -
+            fixed_subsidy_per_mwyr(gen[y]) * eTotalCap[y]            
         end)
     # Sum individual resource contributions to fixed costs to get total fixed costs
     @expression(EP, eTotalCFix, sum(EP[:eCFix][y] for y in 1:G))

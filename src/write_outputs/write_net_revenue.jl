@@ -90,9 +90,19 @@ function write_net_revenue(path::AbstractString,
 
     # Add operations and maintenance cost to the dataframe
     dfNetRevenue.Fixed_OM_cost_MW = fixed_om_cost_per_mwyr.(gen) .* dfCap[1:G, :EndCap]
+    dfNetRevenue.Fixed_AMT_cost_MW = fixed_amt_cost_per_mwyr.(gen) .* dfCap[1:G, :EndCap]
+    dfNetRevenue.Fixed_Subsidy_MW = fixed_subsidy_per_mwyr.(gen) .* dfCap[1:G, :EndCap]
     dfNetRevenue.Fixed_OM_cost_MWh = fixed_om_cost_per_mwhyr.(gen) .*
                                      dfCap[1:G, :EndEnergyCap]
+    dfNetRevenue.Fixed_AMT_cost_MWh = fixed_amt_cost_per_mwhyr.(gen) .*
+                                     dfCap[1:G, :EndEnergyCap]
+    dfNetRevenue.Fixed_Subsidy_MWh = fixed_subsidy_per_mwhyr.(gen) .*
+                                     dfCap[1:G, :EndEnergyCap]
     dfNetRevenue.Fixed_OM_cost_charge_MW = fixed_om_cost_charge_per_mwyr.(gen) .*
+                                           dfCap[1:G, :EndChargeCap]
+    dfNetRevenue.Fixed_AMT_cost_charge_MW = fixed_amt_cost_charge_per_mwyr.(gen) .*
+                                           dfCap[1:G, :EndChargeCap]
+    dfNetRevenue.Fixed_Subsidy_charge_MW = fixed_subsidy_charge_per_mwyr.(gen) .*
                                            dfCap[1:G, :EndChargeCap]
     dfNetRevenue.Var_OM_cost_out = var_om_cost_per_mwh.(gen) .* dfPower[1:G, :AnnualSum]
     if !isempty(VRE_STOR)
@@ -137,6 +147,12 @@ function write_net_revenue(path::AbstractString,
         dfNetRevenue.Fixed_OM_cost_MW *= ModelScalingFactor # converting Million US$ to US$
         dfNetRevenue.Fixed_OM_cost_MWh *= ModelScalingFactor # converting Million US$ to US$
         dfNetRevenue.Fixed_OM_cost_charge_MW *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_AMT_cost_MW *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_AMT_cost_MWh *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_AMT_cost_charge_MW *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_Subsidy_MW *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_Subsidy_MWh *= ModelScalingFactor # converting Million US$ to US$
+        dfNetRevenue.Fixed_Subsidy_charge_MW *= ModelScalingFactor # converting Million US$ to US$
         dfNetRevenue.Var_OM_cost_out *= ModelScalingFactor # converting Million US$ to US$
     end
 
@@ -273,6 +289,12 @@ function write_net_revenue(path::AbstractString,
                          dfNetRevenue.Fixed_OM_cost_MW .+
                          dfNetRevenue.Fixed_OM_cost_MWh .+
                          dfNetRevenue.Fixed_OM_cost_charge_MW .+
+                        dfNetRevenue.Fixed_AMT_cost_MW .+
+                        dfNetRevenue.Fixed_AMT_cost_MWh .+
+                        dfNetRevenue.Fixed_AMT_cost_charge_MW .-
+                        dfNetRevenue.Fixed_Subsidy_MW .-
+                        dfNetRevenue.Fixed_Subsidy_MWh .-
+                        dfNetRevenue.Fixed_Subsidy_charge_MW .+
                          dfNetRevenue.Var_OM_cost_out .+
                          dfNetRevenue.Var_OM_cost_in .+
                          dfNetRevenue.Fuel_cost .+

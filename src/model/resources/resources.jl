@@ -661,16 +661,30 @@ rsv_cost(r::AbstractResource) = get(r, :rsv_cost, default_zero)
 rsv_max(r::AbstractResource) = get(r, :rsv_max, default_zero)
 inv_cost_per_mwyr(r::AbstractResource) = get(r, :inv_cost_per_mwyr, default_zero)
 fixed_om_cost_per_mwyr(r::AbstractResource) = get(r, :fixed_om_cost_per_mwyr, default_zero)
+fixed_amt_cost_per_mwyr(r::AbstractResource) = get(r, :fixed_amt_cost_per_mwyr, default_zero)
+fixed_subsidy_per_mwyr(r::AbstractResource) = get(r, :fixed_subsidy_per_mwyr, default_zero)
 var_om_cost_per_mwh(r::AbstractResource) = get(r, :var_om_cost_per_mwh, default_zero)
 inv_cost_per_mwhyr(r::AbstractResource) = get(r, :inv_cost_per_mwhyr, default_zero)
 function fixed_om_cost_per_mwhyr(r::AbstractResource)
     get(r, :fixed_om_cost_per_mwhyr, default_zero)
+end
+function fixed_amt_cost_per_mwhyr(r::AbstractResource)
+    get(r, :fixed_amt_cost_per_mwhyr, default_zero)
+end
+function fixed_subsidy_per_mwhyr(r::AbstractResource)
+    get(r, :fixed_subsidy_per_mwhyr, default_zero)
 end
 function inv_cost_charge_per_mwyr(r::AbstractResource)
     get(r, :inv_cost_charge_per_mwyr, default_zero)
 end
 function fixed_om_cost_charge_per_mwyr(r::AbstractResource)
     get(r, :fixed_om_cost_charge_per_mwyr, default_zero)
+end
+function fixed_amt_cost_charge_per_mwyr(r::AbstractResource)
+    get(r, :fixed_amt_cost_charge_per_mwyr, default_zero)
+end
+function fixed_subsidy_charge_per_mwyr(r::AbstractResource)
+    get(r, :fixed_subsidy_charge_per_mwyr, default_zero)
 end
 start_cost_per_mw(r::AbstractResource) = get(r, :start_cost_per_mw, default_zero)
 
