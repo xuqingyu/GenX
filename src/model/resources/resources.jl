@@ -710,7 +710,7 @@ function min_cofire_start_cols(r::AbstractResource; tag::Int64)
 end
 
 #variability
-maxvar(r::AbstractResource) = get(r, :MaxVar, "None") # if var cannot be found, then set as None
+maxvar(r::AbstractResource) = get(r, :maxvar, "None") # if var cannot be found, then set as None
 
 # Reservoir hydro and storage
 const default_percent = 1.0

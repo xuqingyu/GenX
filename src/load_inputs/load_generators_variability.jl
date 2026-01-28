@@ -36,7 +36,7 @@ function load_generators_variability!(setup::Dict, path::AbstractString, inputs:
         end
         for i in 1:inputs["G"]
             r = inputs["RESOURCES"][i]
-            inputs["pP_Max"][i,:] = transpose(Matrix{Float64}(select!(gen_var,maxvar(r))))
+            inputs["pP_Max"][i,:] = transpose(Matrix{Float64}(select(gen_var,Symbol.(maxvar(r)))))
         end
     end
 
