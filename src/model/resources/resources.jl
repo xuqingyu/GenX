@@ -797,7 +797,9 @@ function qualified_supply(r::AbstractResource; tag::Int64)
 end
 
 # Simple Policies
-max_cap_simple(r::AbstractResource) = get(r, :maxcapreqsp, "Ulmt")
+function max_cap_simple(r::AbstractResource)
+    get(r, Symbol("maxcapreqsp"), "Ulmt")
+end
 
 # write_outputs
 region(r::AbstractResource) = r.region
