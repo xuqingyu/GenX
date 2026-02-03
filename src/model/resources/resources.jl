@@ -521,6 +521,25 @@ function ids_with_policy(rs::Vector{T},
 end
 
 """
+ids_with_simple_policy(rs::Vector{T}, f::Function; policyname::AbstractString) where T <: AbstractResource
+
+Function for finding resources in a vector `rs` where the policy specified by `f` equals the policy detailed name.
+
+# Arguments
+- `rs::Vector{<:AbstractResource}`: The vector of resources.
+- `f::Function`: The policy getter function.
+- `policydetailname::AbstractString`: The detailed name of the policy.
+
+# Returns
+- `ids (Vector{Int64})`: The vector of resource ids with detailed name equals specified function.
+"""
+function ids_with_simple_policy(rs::Vector{T},
+        f::Function;
+        policydetailname::AbstractString) where {T <: AbstractResource}
+    return findall(r -> f(r) == policydetailname, rs)
+end
+
+"""
     const default_zero = 0
 
 Default value for resource attributes.
@@ -776,6 +795,9 @@ end
 function qualified_supply(r::AbstractResource; tag::Int64)
     get(r, Symbol("qualified_supply_$tag"), default_zero)
 end
+
+# Simple Policies
+max_cap_simple(r::AbstractResource) = get(r, :maxcapreqsp, "Ulmt")
 
 # write_outputs
 region(r::AbstractResource) = r.region

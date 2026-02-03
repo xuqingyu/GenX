@@ -45,6 +45,7 @@ function default_settings()
         "LineHurdleRate" => 0,
         "MinUtilRate" => 0,
         "NarrowVariability" => 0,
+        "MaxCapReqSimple" => 0,
         "MinCFReq" => 0)
 end
 
@@ -125,6 +126,7 @@ function default_writeoutput()
         "WriteHydrogenPrices" => true,
         "WriteMaintenance" => true,
         "WriteMaxCapReq" => true,
+        "WriteMaxCapReqSimple" => true,        
         "WriteMinCapReq" => true,
         "WriteMinCFPrices" => true,
         "WriteMinCFRevenue" => true,

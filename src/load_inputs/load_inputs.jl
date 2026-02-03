@@ -58,6 +58,10 @@ function load_inputs(setup::Dict, path::AbstractString)
         load_maximum_capacity_requirement!(policies_path, inputs, setup)
     end
 
+    if setup["MaxCapReqSimple"] == 1
+        load_simple_maximum_capacity_requirement!(policies_path, inputs, setup)
+    end
+
     if setup["EnergyShareRequirement"] == 1
         load_energy_share_requirement!(setup, policies_path, inputs)
     end
