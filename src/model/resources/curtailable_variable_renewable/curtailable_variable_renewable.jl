@@ -53,6 +53,26 @@ function curtailable_variable_renewable!(EP::Model, inputs::Dict, setup::Dict)
         add_similar_to_expression!(EP[:eCapResMarBalance], eCapResMarBalanceVRE)
     end
 
+    # Capacity Reserves Margin (CRM peakload) policy
+
+    if setup["CRM_peakload"] > 0
+        NCRM     = inputs["NCapacityReserveMargin"]
+        peak_idx = inputs["peak_hour_idx"]
+        T = inputs["T"]
+        @expression(EP,
+            eCapResMarBalanceVRE[res = 1:NCRM,t=1:T],
+            sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y]
+                for y in VRE)
+        )
+        for res in 1:NCRM
+            t_peak = peak_idx[res]    
+            add_to_expression!(
+                EP[:eCapResMarBalance][res, t_peak],
+                eCapResMarBalanceVRE[res, t_peak]
+            )
+        end
+    end
+
     ### Constraints ###
     if OperationalReserves == 1
         # Constraints on power output and contribution to regulation and reserves

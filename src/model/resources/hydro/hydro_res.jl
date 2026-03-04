@@ -120,6 +120,27 @@ function hydro_res!(EP::Model, inputs::Dict, setup::Dict)
         add_similar_to_expression!(EP[:eCapResMarBalance], eCapResMarBalanceHydro)
     end
 
+   # Capacity Reserves Margin peakload policy
+    if setup["CRM_peakload"] > 0
+        peak_idx = inputs["peak_hour_idx"]
+        NCRM     = inputs["NCapacityReserveMargin"]
+        T        = inputs["T"]
+        @expression(EP,
+                eCapResMarBalanceHydroRes[res = 1:NCRM, t = 1:T],
+                sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y]
+                    for y in inputs["HYDRO_RES"]
+                )
+            )
+        
+        for res in 1:NCRM
+            t_peak = peak_idx[res]    
+            add_to_expression!(
+                EP[:eCapResMarBalance][res, t_peak],
+                eCapResMarBalanceHydroRes[res, t_peak]
+            )
+        end
+    end
+
     ### Constratints ###
 
     if representative_periods > 1 && !isempty(inputs["STOR_HYDRO_LONG_DURATION"])

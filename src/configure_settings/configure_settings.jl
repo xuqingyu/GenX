@@ -6,6 +6,7 @@ function default_settings()
         "OperationalReserves" => 0,
         "EnergyShareRequirement" => 0,
         "CapacityReserveMargin" => 0,
+        "CRM_peakload" => 0,
         "CO2Cap" => 0,
         "StorageLosses" => 1,
         "LDSAdditionalConstraints" => 1,
