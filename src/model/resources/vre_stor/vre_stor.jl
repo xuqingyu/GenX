@@ -2473,35 +2473,32 @@ function vre_stor_capres!(EP::Model, inputs::Dict, setup::Dict)
 
       # Constraint 4: capacity reserve margin peakload constraint
     if setup["CRM_peakload"] > 0
-        peak_idx = inputs["peak_hour_idx"]
         NCRM     = inputs["NCapacityReserveMargin"]
-        T = inputs["T"]
         @expression(EP,
-            eCapResMarBalanceeCapResMarBalanceStor_VRE_STOR[res = 1:NCRM,t=1:T],
+            eCapResMarBalancePeakStor_VRE_STOR[res = 1:NCRM],
             sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y] for y in HYDRO_RES))
     for res in 1:NCRM
-            t_peak = peak_idx[res]   
             # 1) solar
-            eCapResMarBalanceStor_VRE_STOR = sum(derating_factor(gen[y], tag = res) * by_rid(y, :etainverter) *
+            eCapResMarBalancePeakStor_VRE_STOR = sum(derating_factor(gen[y], tag = res) * by_rid(y, :etainverter) *
                      EP[:eTotalCap_SOLAR][y]
                     for y in inputs["VS_SOLAR"]
                     if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
 
             # 2) wind
-            eCapResMarBalanceStor_VRE_STOR += sum(derating_factor(gen[y], tag = res) *
+            eCapResMarBalancePeakStor_VRE_STOR += sum(derating_factor(gen[y], tag = res) *
                          EP[:eTotalCap_WIND][y]
                         for y in inputs["VS_WIND"]
                         if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
 
             # 3) DC charge discharge
-            eCapResMarBalanceStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
                      EP[:eTotalCap_STORAGE][y]   
                      for y in STOR_ALL_DC        
                      if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
 
 
             # 4) AC
-            eCapResMarBalanceStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) *
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) *
                      EP[:eTotalCap_STORAGE][y]
                      for y in STOR_ALL_AC
                      if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
@@ -2509,12 +2506,12 @@ function vre_stor_capres!(EP::Model, inputs::Dict, setup::Dict)
 
             # 5) StorageVirtualDischarge
             if StorageVirtualDischarge > 0
-            eCapResMarBalanceStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
              EP[:vCAPRES_DC_DISCHARGE][y]
               for y in DC_DISCHARGE
                  if !iszero(inputs["dfCapRes"][gen_zone[y], res]) 
                 )
-            eCapResMarBalanceStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * 
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * 
                 EP[:vCAPRES_AC_DISCHARGE][y]
                 for y in AC_DISCHARGE
                     if !iszero(inputs["dfCapRes"][gen_zone[y], res])
@@ -2522,7 +2519,7 @@ function vre_stor_capres!(EP::Model, inputs::Dict, setup::Dict)
             end
 
             # 6) 
-            add_to_expression!(EP[:eCapResMarBalance][res, t_peak], eCapResMarBalanceStor_VRE_STOR[res, t_peak])
+            add_to_expression!(EP[:eCapResMarBalancePeak][res], eCapResMarBalancePeakStor_VRE_STOR[res])
         end
     end
 

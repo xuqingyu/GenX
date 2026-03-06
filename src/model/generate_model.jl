@@ -105,8 +105,8 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     # Initialize CRM_peakload
     if setup["CRM_peakload"] > 0
      create_empty_expression!(EP,
-        :eCapResMarBalance,
-        (inputs["NCapacityReserveMargin"], T))
+        :eCapResMarBalancePeak,
+        (inputs["NCapacityReserveMargin"]))
     end
 
     # Energy Share Requirement

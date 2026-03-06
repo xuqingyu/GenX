@@ -55,20 +55,19 @@ function curtailable_variable_renewable!(EP::Model, inputs::Dict, setup::Dict)
 
     # Capacity Reserves Margin (CRM peakload) policy
 
+    #attention: when use peakload CRM, the derating factor in the file already means the the effective
+    # capacity factor, no need to multiply the power (inputs["pP_Max"]) anymore.
     if setup["CRM_peakload"] > 0
         NCRM     = inputs["NCapacityReserveMargin"]
-        peak_idx = inputs["peak_hour_idx"]
-        T = inputs["T"]
         @expression(EP,
-            eCapResMarBalanceVRE[res = 1:NCRM,t=1:T],
+            eCapResMarBalancePeakVRE[res = 1:NCRM],
             sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y]
                 for y in VRE)
         )
-        for res in 1:NCRM
-            t_peak = peak_idx[res]    
+        for res in 1:NCRM   
             add_to_expression!(
-                EP[:eCapResMarBalance][res, t_peak],
-                eCapResMarBalanceVRE[res, t_peak]
+                EP[:eCapResMarBalancePeak][res],
+                eCapResMarBalancePeakVRE[res]
             )
         end
     end

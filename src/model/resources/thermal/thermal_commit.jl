@@ -504,7 +504,7 @@ function thermal_maintenance_capacity_reserve_margin_peakload_adjustment!(EP::Mo
                 inputs,
                 y,
                 capres) for y in applicable_resources))
-    add_similar_to_expression!(EP[:eCapResMarBalance], maint_adj)
+    add_similar_to_expression!(EP[:eCapResMarBalancePeak], maint_adj)
 end
 
 function thermal_maintenance_capacity_reserve_margin_peakload_adjustment(EP::Model,

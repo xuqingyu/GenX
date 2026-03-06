@@ -34,15 +34,12 @@ function thermal!(EP::Model, inputs::Dict, setup::Dict)
 
        # Capacity Reserves Margin peakload policy
     if setup["CRM_peakload"] > 0
-        peak_idx = inputs["peak_hour_idx"]
         NCRM     = inputs["NCapacityReserveMargin"]
-        T = inputs["T"]
         @expression(EP,
-            eCapResMarBalanceThermal[res = 1:NCRM,t=1:T],
+            eCapResMarBalancePeakThermal[res = 1:NCRM],
             sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y] for y in THERM_ALL))
         for  res in 1:NCRM
-                t_peak = peak_idx[res]    
-                add_to_expression!(EP[:eCapResMarBalance][res, t_peak], eCapResMarBalanceThermal[res, t_peak])
+                add_to_expression!(EP[:eCapResMarBalancePeak][res], eCapResMarBalancePeakThermal[res])
         end
     end
     

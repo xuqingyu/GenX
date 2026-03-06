@@ -171,6 +171,22 @@ function transmission!(EP::Model, inputs::Dict, setup::Dict)
         end
     end
 
+    # Capacity Reserves Margin peakload policy
+    if setup["CRM_peakload"] > 0
+        if Z > 1
+            NCRM = inputs["NCapacityReserveMargin"]
+            t_peak = inputs["peak_hour_idx"]
+            @expression(EP,
+                eCapResMarBalancePeakTrans[res = 1:NCRM],
+                sum(inputs["dfTransCapRes_exclPeak"][l, res] *
+                    inputs["dfDerateTransCapResPeak"][l, res] * EP[:vFLOW][l,  t_peak[res]] for l in 1:L))
+            for res in 1:NCRM
+            add_to_expression!(EP[:eCapResMarBalancePeak][res], -1.0*eCapResMarBalancePeakTrans[res])
+            end
+        end
+    end
+
+
     ### Constraints ###
 
     ## Power flow and transmission (between zone) loss related constraints
