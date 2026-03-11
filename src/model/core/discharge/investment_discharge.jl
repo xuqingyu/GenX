@@ -198,5 +198,14 @@ function investment_discharge!(EP::Model, inputs::Dict, setup::Dict)
             sum(EP[:eTotalCap][y] for y in setdiff(
                 ids_with_simple_policy(gen, max_cap_simple, policydetailname = inputs["SimpleMaxCapReqNames"][maxcapsp]), ALLAM_CYCLE_LOX)))
         add_similar_to_expression!(EP[:eMaxCapResSp], eMaxCapResInvestSp)
-    end    
+    end
+    
+    if setup["MinCapReqSimple"] == 1
+        @expression(EP,
+            eMinCapResInvestSp[mincapsp = 1:inputs["NumberOfSimpleMinCapReqs"]],
+            sum(EP[:eTotalCap][y] for y in setdiff(
+                ids_with_simple_policy(gen, min_cap_simple, policydetailname = inputs["SimpleMinCapReqNames"][mincapsp]), ALLAM_CYCLE_LOX)))
+        add_similar_to_expression!(EP[:eMinCapResSp], eMinCapResInvestSp)
+    end  
+    
 end
