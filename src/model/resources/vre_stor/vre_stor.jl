@@ -102,6 +102,7 @@ function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
     # Policy flags
     EnergyShareRequirement = setup["EnergyShareRequirement"]
     CapacityReserveMargin = setup["CapacityReserveMargin"]
+    CRM_peakload = setup["CRM_peakload"]
     MinCapReq = setup["MinCapReq"]
     MaxCapReq = setup["MaxCapReq"]
     IncludeLossesInESR = setup["IncludeLossesInESR"]
@@ -298,6 +299,11 @@ function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
 
     # Capacity Reserve Margin Requirement
     if CapacityReserveMargin > 0
+        vre_stor_capres!(EP, inputs, setup)
+    end
+
+    # Capacity Reserve Margin peakload Requirement
+    if CRM_peakload > 0
         vre_stor_capres!(EP, inputs, setup)
     end
 
@@ -2465,6 +2471,59 @@ function vre_stor_capres!(EP::Model, inputs::Dict, setup::Dict)
     end
     add_similar_to_expression!(EP[:eCapResMarBalance], EP[:eCapResMarBalanceStor_VRE_STOR])
 
+      # Constraint 4: capacity reserve margin peakload constraint
+    if setup["CRM_peakload"] > 0
+        NCRM     = inputs["NCapacityReserveMargin"]
+        @expression(EP,
+            eCapResMarBalancePeakStor_VRE_STOR[res = 1:NCRM],
+            sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y] for y in HYDRO_RES))
+    for res in 1:NCRM
+            # 1) solar
+            eCapResMarBalancePeakStor_VRE_STOR = sum(derating_factor(gen[y], tag = res) * by_rid(y, :etainverter) *
+                     EP[:eTotalCap_SOLAR][y]
+                    for y in inputs["VS_SOLAR"]
+                    if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
+
+            # 2) wind
+            eCapResMarBalancePeakStor_VRE_STOR += sum(derating_factor(gen[y], tag = res) *
+                         EP[:eTotalCap_WIND][y]
+                        for y in inputs["VS_WIND"]
+                        if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
+
+            # 3) DC charge discharge
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
+                     EP[:eTotalCap_STORAGE][y]   
+                     for y in STOR_ALL_DC        
+                     if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
+
+
+            # 4) AC
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) *
+                     EP[:eTotalCap_STORAGE][y]
+                     for y in STOR_ALL_AC
+                     if !iszero(inputs["dfCapRes"][gen_zone[y], res]))
+
+
+            # 5) StorageVirtualDischarge
+            if StorageVirtualDischarge > 0
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * by_rid(y, :etainverter) *
+             EP[:vCAPRES_DC_DISCHARGE][y]
+              for y in DC_DISCHARGE
+                 if !iszero(inputs["dfCapRes"][gen_zone[y], res]) 
+                )
+            eCapResMarBalancePeakStor_VRE_STOR += sum( derating_factor(gen[y], tag=res) * 
+                EP[:vCAPRES_AC_DISCHARGE][y]
+                for y in AC_DISCHARGE
+                    if !iszero(inputs["dfCapRes"][gen_zone[y], res])
+                ) 
+            end
+
+            # 6) 
+            add_to_expression!(EP[:eCapResMarBalancePeak][res], eCapResMarBalancePeakStor_VRE_STOR[res])
+        end
+    end
+
+
     ### OBJECTIVE FUNCTION ADDITIONS ###
 
     #Variable costs of DC "virtual charging" for technologies "y" during hour "t" in zone "z"
@@ -2709,7 +2768,8 @@ function vre_stor_operational_reserves!(EP::Model, inputs::Dict, setup::Dict)
     p = inputs["hours_per_subperiod"]
 
     CapacityReserveMargin = setup["CapacityReserveMargin"]
-
+    CRM_peakload = setup["CRM_peakload"]
+    
     VRE_STOR_REG_RSV = intersect(VRE_STOR, inputs["REG"], inputs["RSV"])                    # Set of VRE-STOR resources with both REG and RSV reserves
     VRE_STOR_REG = intersect(VRE_STOR, inputs["REG"])                                       # Set of VRE-STOR resources with REG reserves
     VRE_STOR_RSV = intersect(VRE_STOR, inputs["RSV"])                                       # Set of VRE-STOR resources with RSV reserves

@@ -102,6 +102,13 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
             (inputs["NCapacityReserveMargin"], T))
     end
 
+    # Initialize CRM_peakload
+    if setup["CRM_peakload"] > 0
+     create_empty_expression!(EP,
+        :eCapResMarBalancePeak,
+        (inputs["NCapacityReserveMargin"]))
+    end
+
     # Energy Share Requirement
     if setup["EnergyShareRequirement"] >= 1
         create_empty_expression!(EP, :eESR, inputs["nESR"])
@@ -258,6 +265,11 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     #Capacity Reserve Margin
     if setup["CapacityReserveMargin"] > 0
         cap_reserve_margin!(EP, inputs, setup)
+    end
+
+    #CRM_peakload
+    if setup["CRM_peakload"] > 0
+        cap_reserve_margin_peakload!(EP, inputs, setup)
     end
 
     if (setup["MinCapReq"] == 1)
