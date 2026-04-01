@@ -130,7 +130,6 @@ function default_writeoutput()
         "WriteMaxCapReq" => true,
         "WriteMaxCapReqSimple" => true,        
         "WriteMinCapReq" => true,
-        "WriteMinCapReqSimple" => true,
         "WriteMinCFPrices" => true,
         "WriteMinCFRevenue" => true,
         "WriteMinGenFractionPrices" => true,
