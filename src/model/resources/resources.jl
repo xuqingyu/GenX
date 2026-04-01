@@ -801,6 +801,7 @@ function max_cap_simple(r::AbstractResource)
     get(r, Symbol("maxcapreqsp"), "Ulmt")
 end
 
+
 # write_outputs
 region(r::AbstractResource) = r.region
 cluster(r::AbstractResource) = r.cluster
