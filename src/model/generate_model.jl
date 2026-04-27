@@ -107,6 +107,9 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
      create_empty_expression!(EP,
         :eCapResMarBalancePeak,
         (inputs["NCapacityReserveMargin"]))
+    # Capacity Subsidy Expression
+    if setup["CapacitySubsidy"] == 1
+        create_empty_expression!(EP, :eCapSubsidy, inputs["G"])
     end
 
     # Energy Share Requirement
@@ -266,6 +269,11 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     if setup["CapacityReserveMargin"] > 0
         cap_reserve_margin!(EP, inputs, setup)
     end
+    #Capacity subsidy
+    if setup["CapacitySubsidy"] == 1
+        capacity_subsidy!(EP, inputs, setup)
+    end 
+
 
     #CRM_peakload
     if setup["CRM_peakload"] > 0

@@ -599,6 +599,14 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             println("Time elapsed for writing simple minimum capacity requirement is")
             println(elapsed_time_min_cap_req_simple)
         end 
+        
+        # Capacity Subsidy Output
+        if setup["CapacitySubsidy"] == 1 && has_duals(EP) == 1
+            elapsed_time_cap_subsidy = @elapsed write_capacity_subsidy(EP,inputs, path, setup)
+            println("Time elapsed for writing capacity subsidy is")
+            println(elapsed_time_cap_subsidy)
+        end
+
 
         if setup["HydrogenMinimumProduction"] == 1 && has_duals(EP)
             if output_settings_d["WriteHydrogenPrices"]
