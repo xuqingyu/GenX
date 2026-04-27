@@ -102,6 +102,11 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
             (inputs["NCapacityReserveMargin"], T))
     end
 
+    # Capacity Subsidy Expression
+    if setup["CapacitySubsidy"] == 1
+        create_empty_expression!(EP, :eCapSubsidy, inputs["G"])
+    end
+
     # Energy Share Requirement
     if setup["EnergyShareRequirement"] >= 1
         create_empty_expression!(EP, :eESR, inputs["nESR"])
@@ -255,6 +260,11 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     if setup["CapacityReserveMargin"] > 0
         cap_reserve_margin!(EP, inputs, setup)
     end
+    #Capacity subsidy
+    if setup["CapacitySubsidy"] == 1
+        capacity_subsidy!(EP, inputs, setup)
+    end 
+
 
     if (setup["MinCapReq"] == 1)
         minimum_capacity_requirement!(EP, inputs, setup)

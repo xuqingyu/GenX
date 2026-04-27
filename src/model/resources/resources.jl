@@ -801,6 +801,11 @@ function max_cap_simple(r::AbstractResource)
     get(r, Symbol("maxcapreqsp"), "Ulmt")
 end
 
+# Capacity subsidy Policies
+function capacity_subsidy(r::AbstractResource)
+    get(r, Symbol("capacity_sub_price"), 0.0)
+end
+
 
 # write_outputs
 region(r::AbstractResource) = r.region
