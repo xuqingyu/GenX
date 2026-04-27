@@ -107,6 +107,8 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
      create_empty_expression!(EP,
         :eCapResMarBalancePeak,
         (inputs["NCapacityReserveMargin"]))
+    end
+    
     # Capacity Subsidy Expression
     if setup["CapacitySubsidy"] == 1
         create_empty_expression!(EP, :eCapSubsidy, inputs["G"])
