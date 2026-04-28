@@ -82,8 +82,8 @@ function load_inputs(setup::Dict, path::AbstractString)
         load_co2_cap!(setup, policies_path, inputs)
     end
 
-    if setup["CapacitySubsidy"] == 1
-        load_capacity_subsidy!(setup, path, inputs)
+    if setup["CapacityPayment"] == 1
+        load_capacity_payment!(setup, path, inputs)
     end
 
     if !isempty(inputs["VRE_STOR"])
