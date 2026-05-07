@@ -18,3 +18,4 @@ function load_simple_minimum_capacity_requirement!(path::AbstractString, inputs:
     end
     println(filename * " Successfully Read!")
 end
+
