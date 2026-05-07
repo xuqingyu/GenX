@@ -3,7 +3,7 @@
 
 Read input parameters related to simple minimum capacity requirement constraints (e.g. technology specific deployment mandates)
 """
-function load_simple_minimum_capacity_requirement!(path::AbstractString, inputs::Dict, setup::Dict)
+function load_simple_minimum_capacity_requirement!(policies_path::AbstractString, inputs::Dict, setup::Dict)
     filename = "Minimum_capacity_requirement_simple.csv"
     df = load_dataframe(joinpath(path, filename))
     inputs["NumberOfSimpleMinCapReqs"] = nrow(df)
@@ -18,4 +18,3 @@ function load_simple_minimum_capacity_requirement!(path::AbstractString, inputs:
     end
     println(filename * " Successfully Read!")
 end
-
