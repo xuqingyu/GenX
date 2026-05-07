@@ -3,7 +3,7 @@
 
 Read input parameters related to simple maximum capacity requirement constraints (e.g. technology specific deployment mandates)
 """
-function load_simple_maximum_capacity_requirement!(policies_path::AbstractString, inputs::Dict, setup::Dict)
+function load_simple_maximum_capacity_requirement!(path::AbstractString, inputs::Dict, setup::Dict)
     filename = "Maximum_capacity_requirement_simple.csv"
     df = load_dataframe(joinpath(path, filename))
     inputs["NumberOfSimpleMaxCapReqs"] = nrow(df)
