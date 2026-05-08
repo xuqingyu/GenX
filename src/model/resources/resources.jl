@@ -798,12 +798,12 @@ end
 
 # Simple Policies
 function max_cap_simple(r::AbstractResource)
-    get(r, Symbol("MaxCapReqSp"), "Ulmt")
+    get(r, Symbol("maxcapreqsp"), "Ulmt")
 end
 
 # Simple Policies
 function min_cap_simple(r::AbstractResource)
-    get(r, Symbol("MinCapReqSp"), "Ulmt")
+    get(r, Symbol("mincapreqsp"), "Ulmt")
 end
 
 # Capacity payment Policies
