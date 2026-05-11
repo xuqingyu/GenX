@@ -3,7 +3,7 @@ function write_minimum_capacity_requirement_simple(path::AbstractString,
         setup::Dict,
         EP::Model)
     NumberOfMinCapReqs = inputs["NumberOfSimpleMinCapReqs"]
-    dfMaxCapSpPrice = DataFrame(
+    dfMinCapSpPrice = DataFrame(
         Constraint = [Symbol("MinCapReqSp_$mincap")
                       for mincap in 1:NumberOfMinCapReqs],
         ConstraintDescription = inputs["SimpleMinCapReqNames"],
