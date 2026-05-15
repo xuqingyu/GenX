@@ -29,5 +29,5 @@ function minimum_capacity_requirement_simple!(EP::Model, inputs::Dict, setup::Di
 
     @constraint(EP,
         cZoneMinCapReqSp[mincap = 1:NumberOfMinCapSpReqs],
-        EP[:eMinCapResSp][mincap]<=inputs["MinCapReqSp"][mincap])
+        EP[:eMinCapResSp][mincap]>=inputs["MinCapReqSp"][mincap])
 end
