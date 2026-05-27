@@ -307,6 +307,12 @@ function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
         vre_stor_capres!(EP, inputs, setup)
     end
 
+    # Capacity Reserve Margin peakload Requirement
+    if setup["CRM_multihours"] > 0
+        vre_stor_capres!(EP, inputs, setup)
+    end
+
+
     # Operational Reserves Requirement
     if OperationalReserves == 1
         vre_stor_operational_reserves!(EP, inputs, setup)

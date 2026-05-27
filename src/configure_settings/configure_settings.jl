@@ -7,6 +7,7 @@ function default_settings()
         "EnergyShareRequirement" => 0,
         "CapacityReserveMargin" => 0,
         "CRM_peakload" => 0,
+        "CRM_multihours" => 0,
         "CapacityPayment" => 0,
         "CO2Cap" => 0,
         "StorageLosses" => 1,

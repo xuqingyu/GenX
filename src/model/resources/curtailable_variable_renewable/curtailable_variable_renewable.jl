@@ -72,6 +72,28 @@ function curtailable_variable_renewable!(EP::Model, inputs::Dict, setup::Dict)
         end
     end
 
+    # CRM multihours policy
+    if setup["CRM_multihours"] > 0
+        NCRM_multi = inputs["NCapacityReserveMargin"]
+        selected_hours = inputs["selected_capres_multihours"]
+
+        @expression(EP,
+            eCapResMarBalanceMultiVRE[res = 1:NCRM_multi, t in union(selected_hours[res]...)],
+            sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y]
+                for y in VRE)
+        )
+
+        for res in 1:NCRM_multi
+            for t in selected_hours[res]
+                add_to_expression!(
+                    EP[:eCapResMarBalanceMultihour][res, t],
+                    eCapResMarBalanceMultiVRE[res, t]
+                )
+            end
+        end
+    end
+
+
     ### Constraints ###
     if OperationalReserves == 1
         # Constraints on power output and contribution to regulation and reserves

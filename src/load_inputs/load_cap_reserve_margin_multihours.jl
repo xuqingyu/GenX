@@ -7,34 +7,34 @@ function load_cap_reserve_margin_multihours!(setup::Dict, path::AbstractString, 
     scale_factor = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
 
     # Slack variables
-    filename = "Capacity_reserve_margin_multihours_slack.csv"
+    filename = "CRM_multihours_slack.csv"
     if isfile(joinpath(path, filename))
         df = load_dataframe(joinpath(path, filename))
-        inputs["dfCapResMulti_slack"] = df
-        inputs["dfCapResMulti_slack"][!, :PriceCap] ./= scale_factor
+        inputs["dfCapRes_slack"] = df
+        inputs["dfCapRes_slack"][!, :PriceCap] ./= scale_factor
     end
 
     # Core reserve margin requirements
-    filename = "Capacity_reserve_margin_multihours.csv"
+    filename = "CRM_multihours.csv"
     df = load_dataframe(joinpath(path, filename))
 
     mat = extract_matrix_from_dataframe(df, "CapRes")
-    inputs["dfCapResMulti"] = mat
+    inputs["dfCapRes"] = mat
 
     NCRM = size(mat, 2)
-    inputs["NCapacityReserveMulti"] = NCRM
+    inputs["NCapacityReserveMargin"] = NCRM
 
     # #####################################
     # load t for each region
     # #####################################
-    filename = "Capacity_reserve_margin_multihours_selected.csv"
+    filename = "CRM_multihours_selected.csv"
     df_selected = load_dataframe(joinpath(path, filename))
 
     selected_hours = Dict{Int, Vector{Int}}()
     for res in 1:NCRM
-        selected_hours[res] = df_selected[df_selected.res .== res, :t]
+        selected_hours[res] = df_selected[df_selected.CapRes .== res, :t]
     end
-    inputs["selected_capres_multi_hours"] = selected_hours
+    inputs["selected_capres_multihours"] = selected_hours
 
     println(filename * " Successfully Read!")
 end
