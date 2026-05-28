@@ -1,5 +1,5 @@
 function write_reserve_margin_w_multihours(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
-    NCRM = inputs["NCapacityReserve"]
+    NCRM = inputs["NCapacityReserveMargin"]
     selected_hours = inputs["selected_capres_multihours"]
     scale = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
 
@@ -11,7 +11,7 @@ function write_reserve_margin_w_multihours(path::AbstractString, inputs::Dict, s
         ts_list = selected_hours[res]
         for (i, t) in enumerate(all_ts)
             if t in ts_list
-                w_vals[i] = dual(EP[:cCapacityResMarginMulti][res, t]) / inputs["omega"][t] * scale
+                w_vals[i] = dual(EP[:cCapacityResMarginMultihour][res, t]) / inputs["omega"][t] * scale
             end
         end
         df[!, Symbol("CapResMulti_$res")] = w_vals

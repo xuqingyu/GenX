@@ -8,7 +8,7 @@ Constraints are only applied to the exogenously specified t indices, not all tim
 function cap_reserve_margin_multihours!(EP::Model, inputs::Dict, setup::Dict)
     # Capacity reserve margin constraints for EXOGENOUSLY SELECTED HOURS 
     NCRM = inputs["NCapacityReserveMargin"]
-    selected_hours = inputs["selected_capres_hours"]  
+    selected_hours = inputs["selected_capres_multihours"]  
     println("Capacity Reserve Margin - Selected Critical Hours Module")
 
     if haskey(inputs, "dfCapRes_slack")
@@ -26,17 +26,11 @@ function cap_reserve_margin_multihours!(EP::Model, inputs::Dict, setup::Dict)
         add_to_expression!(EP[:eObj], eCTotalCapResSlack)
     end
 
-    for res in 1:NCRM
-        ts = selected_hours[res]
-        isempty(ts) && continue
-        # Create constraint for EACH selected timestep t
-        @constraint(EP,
-            cCapacityResMarginSelected[t in ts],
-            EP[:eCapResMarBalanceMultihour][res, t]
-            >= sum(
-                inputs["pD"][t, z] * (1 + inputs["dfCapRes"][z, res])
-                for z in findall(!iszero, inputs["dfCapRes"][:, res])
-            )
+    @constraint(EP, cCapacityResMarginMultihour[res=1:NCRM, t in selected_hours[res]],
+        EP[:eCapResMarBalanceMultihour][res, t]
+        >= sum(
+            inputs["pD"][t, z] * (1 + inputs["dfCapRes"][z, res])
+            for z in findall(!iszero, inputs["dfCapRes"][:, res])
         )
-    end
+    )
 end

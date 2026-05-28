@@ -112,7 +112,7 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     # Initialize CRM_multihours
     if setup["CRM_multihours"] > 0
         create_empty_expression!(EP,
-            :eCapResMarBalanceMultihours,
+            :eCapResMarBalanceMultihour,
             (inputs["NCapacityReserveMargin"], T))
     end
 

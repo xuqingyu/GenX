@@ -1,25 +1,22 @@
 function write_virtual_discharge_multihours(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
     STOR_ALL = inputs["STOR_ALL"]
-    isempty(STOR_ALL) && return
-
+    scale_factor = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
+    NCRM = inputs["NCapacityReserveMargin"]
+    resources = inputs["RESOURCE_NAMES"][STOR_ALL]
+    zones = inputs["R_ZONES"][STOR_ALL]
     gen = inputs["RESOURCES"]
-    selected_hours = inputs["selected_capres_multihours"]
-    NCRM = inputs["NCapacityReserve"]
-    scale = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
 
-    df = DataFrame(
-        Resource=inputs["RESOURCE_NAMES"][STOR_ALL],
-        Zone=zone_id.(gen)[STOR_ALL]
-    )
+    df = DataFrame(Resource = resources, Zone = zones)
 
     for res in 1:NCRM
-        ts_list = selected_hours[res]
-        virt = zeros(length(STOR_ALL))
-        for y in STOR_ALL
-            virt[y] = derating_factor(gen[y], tag=res) * value(EP[:eTotalCap][y]) * scale
-        end
+        virt = [
+            derating_factor(gen[y], tag=res) * value(EP[:eTotalCap][y]) * scale_factor
+            for y in STOR_ALL
+        ]
+
         df[!, Symbol("CapResMulti_$res")] = virt
     end
 
     CSV.write(joinpath(path, "virtual_discharge_multihours.csv"), df)
+    return nothing
 end
