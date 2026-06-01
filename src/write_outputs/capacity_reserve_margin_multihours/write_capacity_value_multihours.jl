@@ -15,7 +15,7 @@ function write_capacity_value_multihours(path::AbstractString, inputs::Dict, set
     eTotalCap = value.(EP[:eTotalCap])
 
     df = DataFrame()
-    all_times = sort(unique(reduce(vcat, selected_hours[1:NCRM])))
+    all_times = sort(unique(reduce(vcat, [selected_hours[res] for res in 1:NCRM])))
 
     for res in 1:NCRM
         ts_list = selected_hours[res]
@@ -50,5 +50,6 @@ function write_capacity_value_multihours(path::AbstractString, inputs::Dict, set
         )
         append!(df, temp_df) 
     end
+    
     write_simple_csv(joinpath(path, "CapacityValue_multihours.csv"), df)
 end

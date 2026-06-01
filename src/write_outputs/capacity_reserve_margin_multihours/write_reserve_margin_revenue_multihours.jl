@@ -12,7 +12,7 @@ function write_reserve_margin_revenue_multihours(path::AbstractString, inputs::D
         Zone=zone_id.(gen),
         Cluster=cluster.(gen)
     )
-    annual_total = zeros(G)
+    annual_sum = zeros(G)
 
     for res in 1:NCRM
         ts_list = selected_hours[res]
@@ -21,7 +21,7 @@ function write_reserve_margin_revenue_multihours(path::AbstractString, inputs::D
 
         for t in ts_list
             price = 0.0
-            if haskey(EP, :cCapacityResMarginMultihour) && isassigned(EP[:cCapacityResMarginMultihour], res, t)
+            if haskey(EP, :cCapacityResMarginMultihour) && haskey(EP[:cCapacityResMarginMultihour], (res, t))
                 price = dual(EP[:cCapacityResMarginMultihour][res, t]) * scale_factor
             end
             for y in 1:G
@@ -37,10 +37,10 @@ function write_reserve_margin_revenue_multihours(path::AbstractString, inputs::D
         end
 
         df[!, Symbol("CapResMulti_$res")] = revenue
-        annual_total .+= revenue
+        annual_sum .+= revenue
     end
 
-    df[!, :AnnualTotal] = annual_total
+    df[!, :AnnualSum] = annual_sum
     CSV.write(joinpath(path, "ReserveMarginRevenue_multihours.csv"), df)
     return df
 end

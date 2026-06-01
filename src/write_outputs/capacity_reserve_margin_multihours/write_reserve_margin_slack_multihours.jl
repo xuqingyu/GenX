@@ -1,5 +1,5 @@
 function write_reserve_margin_slack_multihours(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
-   NCRM = inputs["NCapacityReserveMargin"]
+    NCRM = inputs["NCapacityReserveMargin"]
     selected_hours = inputs["selected_capres_multihours"]
     scale = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
 
