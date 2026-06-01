@@ -49,6 +49,6 @@ function write_capacity_value_multihours(path::AbstractString, inputs::Dict, set
             temp_df
         )
         append!(df, temp_df) 
-
+    end
     write_simple_csv(joinpath(path, "CapacityValue_multihours.csv"), df)
 end
