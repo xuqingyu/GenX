@@ -7,11 +7,10 @@ function write_reserve_margin_multihours(path::AbstractString, setup::Dict, inpu
 
     for res in 1:NCRM
         ts_list = sort(unique(selected_hours[res]))
-        isempty(ts_list) && continue  # 防空
+        isempty(ts_list) && continue  
         prices = zeros(length(ts_list))
 
         for (i, t) in enumerate(ts_list)
-            # ✅ 安全读取稀疏约束（唯一不崩溃写法）
             if haskey(EP, :cCapacityResMarginMultihour) && haskey(EP[:cCapacityResMarginMultihour], (res, t))
                 prices[i] = dual(EP[:cCapacityResMarginMultihour][res, t]) * scale_factor
             else
