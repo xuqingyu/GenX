@@ -217,7 +217,7 @@ function hydro_res!(EP::Model, inputs::Dict, setup::Dict)
         cHydroMaxEnergy[y in HYDRO_RES_KNOWN_CAP, t in 1:T],
         EP[:vS_HYDRO][y, t]<=hydro_energy_to_power_ratio(gen[y]) * EP[:eTotalCap][y])
 
-    if setup["OperationalReserves"] == 1
+    if setup["OperationalReserves"] > 0
         ### Reserve related constraints for reservoir hydro resources (y in HYDRO_RES), if used
         hydro_res_operational_reserves!(EP, inputs)
     end

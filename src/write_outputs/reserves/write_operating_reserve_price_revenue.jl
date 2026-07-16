@@ -36,8 +36,15 @@ function write_operating_reserve_regulation_revenue(path::AbstractString,
     weighted_reg_price = operating_regulation_price(EP, inputs, setup)
     weighted_rsv_price = operating_reserve_price(EP, inputs, setup)
 
-    rsvrevenue = value.(EP[:vRSV][RSV, :].data) .* transpose(weighted_rsv_price)
-    regrevenue = value.(EP[:vREG][REG, :].data) .* transpose(weighted_reg_price)
+    if setup["OperationalReserves"] == 2
+        rsvrevenue = value.(EP[:vRSV][RSV, :].data) .*
+                     weighted_rsv_price[zones[RSV], :]
+        regrevenue = value.(EP[:vREG][REG, :].data) .*
+                     weighted_reg_price[zones[REG], :]
+    else
+        rsvrevenue = value.(EP[:vRSV][RSV, :].data) .* transpose(weighted_rsv_price)
+        regrevenue = value.(EP[:vREG][REG, :].data) .* transpose(weighted_reg_price)
+    end
 
     rsvrevenue *= scale_factor
     regrevenue *= scale_factor
@@ -58,13 +65,28 @@ end
 Operating regulation price for each time step.
 This is equal to the dual variable of the regulation requirement constraint.
 
-    Returns a vector, with units of USD/MW
+    Returns a time vector in system-wide mode or a zone-by-time matrix in zonal mode,
+    with units of USD/MW.
 """
 
-function operating_regulation_price(EP::Model, inputs::Dict, setup::Dict)::Vector{Float64}
+function operating_regulation_price(EP::Model, inputs::Dict, setup::Dict)
     ω = inputs["omega"]
     scale_factor = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
-    return dual.(EP[:cReg]) ./ ω * scale_factor
+    requirement_constraint = haskey(EP, :cRegVreStor) ? EP[:cRegVreStor] : EP[:cReg]
+    prices = Array(dual.(requirement_constraint))
+    if setup["OperationalReserves"] == 2
+        zonal_prices = zeros(inputs["Z"], length(ω))
+        zonal_prices[inputs["OPERATIONAL_RESERVE_ZONES"], :] .=
+            prices ./ transpose(ω) .* scale_factor
+        if !isempty(inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"])
+            supply_zones = unique(inputs["pTrans_Start_Zone"][
+                inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]])
+            zonal_prices[supply_zones, :] .=
+                -Array(dual.(EP[:cRegTransferSupply])) ./ transpose(ω) .* scale_factor
+        end
+        return zonal_prices
+    end
+    return prices ./ ω .* scale_factor
 end
 
 @doc raw"""
@@ -75,11 +97,27 @@ end
 Operating reserve price for each time step.
 This is equal to the dual variable of the reserve requirement constraint.
 
-    Returns a vector, with units of USD/MW
+    Returns a time vector in system-wide mode or a zone-by-time matrix in zonal mode,
+    with units of USD/MW.
 """
 
-function operating_reserve_price(EP::Model, inputs::Dict, setup::Dict)::Vector{Float64}
+function operating_reserve_price(EP::Model, inputs::Dict, setup::Dict)
     ω = inputs["omega"]
     scale_factor = setup["ParameterScale"] == 1 ? ModelScalingFactor : 1
-    return dual.(EP[:cRsvReq]) ./ ω * scale_factor
+    requirement_constraint = haskey(EP, :cRsvReqVreStor) ? EP[:cRsvReqVreStor] :
+                             EP[:cRsvReq]
+    prices = Array(dual.(requirement_constraint))
+    if setup["OperationalReserves"] == 2
+        zonal_prices = zeros(inputs["Z"], length(ω))
+        zonal_prices[inputs["OPERATIONAL_RESERVE_ZONES"], :] .=
+            prices ./ transpose(ω) .* scale_factor
+        if !isempty(inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"])
+            supply_zones = unique(inputs["pTrans_Start_Zone"][
+                inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]])
+            zonal_prices[supply_zones, :] .=
+                -Array(dual.(EP[:cRsvTransferSupply])) ./ transpose(ω) .* scale_factor
+        end
+        return zonal_prices
+    end
+    return prices ./ ω .* scale_factor
 end

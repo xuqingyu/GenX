@@ -314,7 +314,7 @@ function vre_stor!(EP::Model, inputs::Dict, setup::Dict)
 
 
     # Operational Reserves Requirement
-    if OperationalReserves == 1
+    if OperationalReserves > 0
         vre_stor_operational_reserves!(EP, inputs, setup)
     end
 
@@ -3096,34 +3096,74 @@ function vre_stor_operational_reserves!(EP::Model, inputs::Dict, setup::Dict)
     end
 
     # Total system reserve constraints
-    @expression(EP,
-        eRegReqVreStor[t = 1:T],
-        inputs["pReg_Req_VRE"] *
-        sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] *
-            by_rid(y, :etainverter)
-        for y in SOLAR_REG)
-        +inputs["pReg_Req_VRE"] *
-         sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y] for y in WIND_REG))
-    @expression(EP,
-        eRsvReqVreStor[t = 1:T],
-        inputs["pRsv_Req_VRE"] *
-        sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] *
-            by_rid(y, :etainverter)
-        for y in SOLAR_RSV)
-        +inputs["pRsv_Req_VRE"] *
-         sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y] for y in WIND_RSV))
+    zonal_reserves = setup["OperationalReserves"] == 2
+    if zonal_reserves
+        reserve_zones = inputs["OPERATIONAL_RESERVE_ZONES"]
+        reg_by_zone = Dict(z => intersect(inputs["REG"], resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        rsv_by_zone = Dict(z => intersect(inputs["RSV"], resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        solar_reg_by_zone = Dict(z => intersect(SOLAR_REG, resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        wind_reg_by_zone = Dict(z => intersect(WIND_REG, resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        solar_rsv_by_zone = Dict(z => intersect(SOLAR_RSV, resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        wind_rsv_by_zone = Dict(z => intersect(WIND_RSV, resources_in_zone_by_rid(gen, z)) for z in reserve_zones)
+        transfer_lines = inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]
+        incoming_lines = Dict(z => [l for l in transfer_lines
+                                    if inputs["pTrans_End_Zone"][l] == z]
+            for z in reserve_zones)
+        transfer_delivery(l) = setup["Trans_Loss_Segments"] == 1 ?
+                               1 - inputs["pPercent_Loss"][l] : 1.0
+        @expression(EP, eRegReqVreStor[z in reserve_zones, t = 1:T],
+            inputs["pReg_Req_VRE"][z] *
+            sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] * by_rid(y, :etainverter)
+                for y in solar_reg_by_zone[z]) +
+            inputs["pReg_Req_VRE"][z] *
+            sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y]
+                for y in wind_reg_by_zone[z]))
+        @expression(EP, eRsvReqVreStor[z in reserve_zones, t = 1:T],
+            inputs["pRsv_Req_VRE"][z] *
+            sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] * by_rid(y, :etainverter)
+                for y in solar_rsv_by_zone[z]) +
+            inputs["pRsv_Req_VRE"][z] *
+            sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y]
+                for y in wind_rsv_by_zone[z]))
+    else
+        @expression(EP, eRegReqVreStor[t = 1:T],
+            inputs["pReg_Req_VRE"] *
+            sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] * by_rid(y, :etainverter)
+                for y in SOLAR_REG) +
+            inputs["pReg_Req_VRE"] *
+            sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y] for y in WIND_REG))
+        @expression(EP, eRsvReqVreStor[t = 1:T],
+            inputs["pRsv_Req_VRE"] *
+            sum(inputs["pP_Max_Solar"][y, t] * EP[:eTotalCap_SOLAR][y] * by_rid(y, :etainverter)
+                for y in SOLAR_RSV) +
+            inputs["pRsv_Req_VRE"] *
+            sum(inputs["pP_Max_Wind"][y, t] * EP[:eTotalCap_WIND][y] for y in WIND_RSV))
+    end
 
     if !isempty(VRE_STOR_REG)
-        @constraint(EP,
-            cRegVreStor[t = 1:T],
-            sum(EP[:vREG][y, t]
-            for y in inputs["REG"])>=EP[:eRegReq][t] +
-                                     eRegReqVreStor[t])
+        if zonal_reserves
+            @constraint(EP, cRegVreStor[z in reserve_zones, t = 1:T],
+                sum(EP[:vREG][y, t] for y in reg_by_zone[z]) +
+                sum(transfer_delivery(l) * EP[:vREG_TRANSFER][l, t]
+                    for l in incoming_lines[z]) >=
+                EP[:eRegReq][z, t] + eRegReqVreStor[z, t])
+        else
+            @constraint(EP, cRegVreStor[t = 1:T],
+                sum(EP[:vREG][y, t] for y in inputs["REG"]) >=
+                EP[:eRegReq][t] + eRegReqVreStor[t])
+        end
     end
     if !isempty(VRE_STOR_RSV)
-        @constraint(EP,
-            cRsvReqVreStor[t = 1:T],
-            sum(EP[:vRSV][y, t] for y in inputs["RSV"]) +
-            EP[:vUNMET_RSV][t]>=EP[:eRsvReq][t] + eRsvReqVreStor[t])
+        if zonal_reserves
+            @constraint(EP, cRsvReqVreStor[z in reserve_zones, t = 1:T],
+                sum(EP[:vRSV][y, t] for y in rsv_by_zone[z]) +
+                sum(transfer_delivery(l) * EP[:vRSV_TRANSFER][l, t]
+                    for l in incoming_lines[z]) + EP[:vUNMET_RSV][z, t] >=
+                EP[:eRsvReq][z, t] + eRsvReqVreStor[z, t])
+        else
+            @constraint(EP, cRsvReqVreStor[t = 1:T],
+                sum(EP[:vRSV][y, t] for y in inputs["RSV"]) + EP[:vUNMET_RSV][t] >=
+                EP[:eRsvReq][t] + eRsvReqVreStor[t])
+        end
     end
 end

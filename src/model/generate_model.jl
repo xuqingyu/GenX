@@ -252,7 +252,7 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
     # Policies
 
     if setup["OperationalReserves"] > 0
-        operational_reserves_constraints!(EP, inputs)
+        operational_reserves_constraints!(EP, inputs, setup)
     end
 
     # CO2 emissions limits

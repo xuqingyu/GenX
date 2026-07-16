@@ -14,8 +14,16 @@ function write_rsv(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
     if setup["WriteOutputs"] == "annual"
         write_annual(joinpath(path, "reserves.csv"), dfRsv)
     else # setup["WriteOutputs"] == "full"
-        unmet_vec = value.(EP[:vUNMET_RSV]) * scale_factor
-        total_unmet = sum(unmet_vec)
+        unmet_values = Array(value.(EP[:vUNMET_RSV])) * scale_factor
+        if setup["OperationalReserves"] == 2
+            unmet_matrix = unmet_values
+            unmet_zones = inputs["OPERATIONAL_RESERVE_ZONES"]
+            unmet_names = ["unmet_z$z" for z in unmet_zones]
+        else
+            unmet_matrix = reshape(unmet_values, 1, :)
+            unmet_zones = [0]
+            unmet_names = ["unmet"]
+        end
         dfRsv = hcat(dfRsv, DataFrame(rsv, :auto))
         auxNew_Names = [Symbol("Resource");
                         Symbol("Zone");
@@ -24,9 +32,11 @@ function write_rsv(path::AbstractString, inputs::Dict, setup::Dict, EP::Model)
         rename!(dfRsv, auxNew_Names)
 
         total = DataFrame(["Total" 0 sum(dfRsv.AnnualSum) zeros(1, T)], :auto)
-        unmet = DataFrame(["unmet" 0 total_unmet zeros(1, T)], :auto)
+        unmet = DataFrame(Resource = unmet_names,
+            Zone = unmet_zones,
+            AnnualSum = unmet_matrix * inputs["omega"])
+        unmet = hcat(unmet, DataFrame(unmet_matrix, :auto))
         total[!, 4:(T + 3)] .= sum(rsv, dims = 1)
-        unmet[!, 4:(T + 3)] .= transpose(unmet_vec)
         rename!(total, auxNew_Names)
         rename!(unmet, auxNew_Names)
         dfRsv = vcat(dfRsv, unmet, total)

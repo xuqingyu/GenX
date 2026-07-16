@@ -88,6 +88,7 @@ function validate_settings!(settings::Dict{Any, Any})
     # make WriteOutputs setting lowercase and check for valid value
     settings["WriteOutputs"] = lowercase(settings["WriteOutputs"])
     @assert settings["WriteOutputs"] ∈ ["annual", "full"]
+    @assert settings["OperationalReserves"] ∈ [0, 1, 2] "OperationalReserves must be 0, 1, or 2"
 
     if "OperationWrapping" in keys(settings)
         @warn """The behavior of the TimeDomainReduction and OperationWrapping

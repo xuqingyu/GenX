@@ -95,7 +95,7 @@ function curtailable_variable_renewable!(EP::Model, inputs::Dict, setup::Dict)
 
 
     ### Constraints ###
-    if OperationalReserves == 1
+    if OperationalReserves > 0
         # Constraints on power output and contribution to regulation and reserves
         curtailable_variable_renewable_operational_reserves!(EP, inputs)
         remove_operational_reserves_for_binned_vre_resources!(EP, inputs)

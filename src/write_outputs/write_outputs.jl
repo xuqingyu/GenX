@@ -206,7 +206,7 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             println(elapsed_time_shutdown)
         end
 
-        if setup["OperationalReserves"] == 1
+        if setup["OperationalReserves"] > 0
             if output_settings_d["WriteReg"]
                 elapsed_time_reg = @elapsed write_reg(path, inputs, setup, EP)
                 println("Time elapsed for writing regulation is")
@@ -602,7 +602,7 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
 
         dfOpRegRevenue = DataFrame()
         dfOpRsvRevenue = DataFrame()
-        if setup["OperationalReserves"] == 1 && has_duals(EP)
+        if setup["OperationalReserves"] > 0 && has_duals(EP)
             elapsed_time_op_res_rev = @elapsed dfOpRegRevenue, dfOpRsvRevenue = write_operating_reserve_regulation_revenue(
                 path,
                 inputs,

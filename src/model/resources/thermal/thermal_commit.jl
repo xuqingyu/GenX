@@ -212,7 +212,7 @@ function thermal_commit!(EP::Model, inputs::Dict, setup::Dict)
                                    cap_size(gen[y]) * EP[:vSHUT][y, t])
 
     ### Minimum and maximum power output constraints (Constraints #7-8)
-    if setup["OperationalReserves"] == 1
+    if setup["OperationalReserves"] > 0
         # If modeling with regulation and reserves, constraints are established by thermal_commit_operational_reserves() function below
         thermal_commit_operational_reserves!(EP, inputs)
     else
@@ -453,7 +453,7 @@ function fusion_formulation_thermal_commit!(EP::Model, inputs::Dict, setup::Dict
     # This makes writing all the fusion-specific constraints much simpler since they need not 
     # deal with vREG/vRSV/OperationalReserves.
     power_like = EP[:vP]
-    if setup["OperationalReserves"] == 1
+    if setup["OperationalReserves"] > 0
         REG = intersect(FUSION, inputs["REG"]) # Set of thermal resources with regulation reserves
         RSV = intersect(FUSION, inputs["RSV"]) # Set of thermal resources with spinning reserves
 

@@ -706,19 +706,24 @@ This file contains the time-series of capacity factors / availability of the win
 
 This file includes parameter inputs needed to model time-dependent procurement of regulation and spinning reserves. This file is needed if `OperationalReserves` flag is activated in the YAML file `genx_settings.yml`.
 
+For system-wide reserves (`OperationalReserves = 1`), the file uses its first data row and the `Zone` column is optional. For zonal reserves (`OperationalReserves = 2`), the `Zone` column is required and each row defines one zone that receives local regulation and spinning-reserve constraints. Zones omitted from the file receive no operational-reserve constraint. This allows generation-only nodes, such as remote generation hubs, to remain outside the reserve regions without relying on hard-coded zone numbers.
+
+In zonal mode, a line in `Network.csv` is treated as an operational-reserve delivery path when its `Start_Zone` is omitted from `Operational_reserves.csv` and its `End_Zone` is listed. Reserve-capable resources at the start zone may then supply the end zone through that line. Exported reserves share the start zone's available reserve provision, are limited by the line capacity remaining after scheduled power flow, and are derated by the line-loss percentage when linear transmission losses are used. This prevents a remote resource or transmission path from being counted more than once.
+
 ###### Table 22: Structure of the Operational_reserves.csv file
 ---
 |**Column Name** | **Description**|
 | :------------ | :-----------|
-|Reg\_Req\_Percent\_Demand |[0,1], Regulation requirement as a percent of time-dependent demand; here demand is the total across all model zones.|
-|Reg\_Req\_Percent\_VRE |[0,1], Regulation requirement as a percent of time-dependent wind and solar generation (summed across all model zones).|
-|Rsv\_Req\_Percent\_Demand [0,1], |Spinning up or contingency reserve requirement as a percent of time-dependent demand (which is summed across all zones).|
-|Rsv\_Req\_Percent\_VRE |[0,1], Spinning up or contingency reserve requirement as a percent of time-dependent wind and solar generation (which is summed across all zones).|
+|Zone |Required for `OperationalReserves = 2`. Model-zone number receiving a local operational-reserve constraint. Each zone may appear at most once.|
+|Reg\_Req\_Percent\_Demand |[0,1], Regulation requirement as a percent of time-dependent demand. Demand is summed across all zones for `OperationalReserves = 1` and evaluated separately in each zone for `OperationalReserves = 2`.|
+|Reg\_Req\_Percent\_VRE |[0,1], Regulation requirement as a percent of time-dependent wind and solar generation (system-wide for mode 1 and zonal for mode 2).|
+|Rsv\_Req\_Percent\_Demand [0,1], |Spinning up or contingency reserve requirement as a percent of time-dependent demand (system-wide for mode 1 and zonal for mode 2).|
+|Rsv\_Req\_Percent\_VRE |[0,1], Spinning up or contingency reserve requirement as a percent of time-dependent wind and solar generation (system-wide for mode 1 and zonal for mode 2).|
 |Unmet\_Rsv\_Penalty\_Dollar\_per\_MW |Penalty for not meeting time-dependent spinning reserve requirement (USD/MW per time step).|
-|Dynamic\_Contingency |Flags to include capacity (generation or transmission) contingency to be added to the spinning reserve requirement.|
+|Dynamic\_Contingency |Flags to include capacity (generation or transmission) contingency to be added to the spinning reserve requirement. In zonal mode this flag must have the same value in every row.|
 |Dynamic\_Contingency |= 1: contingency set to be equal to largest installed thermal unit (only applied when `UCommit = 1`).|
 ||= 2: contingency set to be equal to largest committed thermal unit each time period (only applied when `UCommit = 1`).|
-|Static\_Contingency\_MW |A fixed static contingency in MW added to reserve requirement. Applied when `UCommit = 1` and `DynamicContingency = 0`, or when `UCommit = 2`. Contingency term not included in operating reserve requirement when this value is set to 0 and DynamicContingency is not active.|
+|Static\_Contingency\_MW |A fixed static contingency in MW added to the reserve requirement. In zonal mode this value applies to the zone identified by that row. Applied when `UCommit = 1` and `DynamicContingency = 0`, or when `UCommit = 2`. Contingency term is omitted when this value is 0 and dynamic contingency is inactive.|
 
 
 
