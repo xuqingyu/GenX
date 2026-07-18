@@ -98,6 +98,24 @@ function non_served_energy!(EP::Model, inputs::Dict, setup::Dict)
         end
     end
 
+    # Capacity Reserves Margin peakload policy
+    if setup["CRM_peakload"] > 0
+        if SEG >= 2
+            NCRM = inputs["NCapacityReserveMargin"]
+            t_peak = inputs["peak_hour_idx"]
+            @expression(EP,
+                eCapResMarBalancePeakNSE[res = 1:NCRM],
+                sum(EP[:vNSE][s,t_peak[res], z]
+                for s in 2:SEG, z in findall(x -> x != 0, inputs["dfCapRes"][:, res])))
+
+            for res in 1:NCRM
+            add_to_expression!(EP[:eCapResMarBalancePeak][res],eCapResMarBalancePeakNSE[res])
+            end
+        end
+    end
+
+
+
     ### Constratints ###
 
     # Demand curtailed in each segment of curtailable demands cannot exceed maximum allowable share of demand

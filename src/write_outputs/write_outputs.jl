@@ -486,6 +486,63 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             end
         end
 
+        dfResRevenue_peakload = DataFrame()
+        if setup["CRM_peakload"] == 1 && has_duals(EP)
+            if output_settings_d["WriteReserveMargin"]
+                elapsed_time_reserve_margin = @elapsed write_reserve_margin_peakload(path, setup,inputs, EP)
+                println("Time elapsed for writing reserve margin is")
+                println(elapsed_time_reserve_margin)
+            end
+
+            if output_settings_d["WriteReserveMarginWithWeights"]
+                elapsed_time_rsv_margin_w = @elapsed write_reserve_margin_w_peakload(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing reserve margin with weights is")
+                println(elapsed_time_rsv_margin_w)
+            end
+
+            if output_settings_d["WriteVirtualDischarge"]
+                elapsed_time_virtual_discharge = @elapsed write_virtual_discharge_peakload(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing virtual discharge is")
+                println(elapsed_time_virtual_discharge)
+            end
+
+            if output_settings_d["WriteReserveMarginRevenue"] ||
+               output_settings_d["WriteNetRevenue"]
+                elapsed_time_res_rev = @elapsed dfResRevenue_peakload = write_reserve_margin_revenue_peakload(
+                    path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing reserve revenue is")
+                println(elapsed_time_res_rev)
+            end
+
+            if haskey(inputs, "dfCapRes_slack") &&
+               output_settings_d["WriteReserveMarginSlack"]
+                elapsed_time_rsv_slack = @elapsed write_reserve_margin_slack_peakload(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing reserve margin slack is")
+                println(elapsed_time_rsv_slack)
+            end
+
+            if output_settings_d["WriteCapacityValue"]
+                elapsed_time_cap_value = @elapsed write_capacity_value_peakload(path,
+                    inputs,
+                    setup,
+                    EP)
+                println("Time elapsed for writing capacity value is")
+                println(elapsed_time_cap_value)
+            end
+        end
+
         dfOpRegRevenue = DataFrame()
         dfOpRsvRevenue = DataFrame()
         if setup["OperationalReserves"] == 1 && has_duals(EP)
@@ -562,6 +619,7 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
                 dfCap,
                 dfESRRev,
                 dfResRevenue,
+                dfResRevenue_peakload,
                 dfChargingcost,
                 dfPower,
                 dfEnergyRevenue,

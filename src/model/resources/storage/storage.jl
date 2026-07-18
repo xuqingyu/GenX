@@ -184,6 +184,17 @@ function storage!(EP::Model, inputs::Dict, setup::Dict)
         end
     end
 
+       # Capacity Reserves Margin peakload policy
+    if setup["CRM_peakload"] > 0
+        NCRM     = inputs["NCapacityReserveMargin"]
+        @expression(EP,
+            eCapResMarBalancePeakStor[res = 1:NCRM],
+            sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y] for y in STOR_ALL))
+        for  res in 1:NCRM
+                add_to_expression!(EP[:eCapResMarBalancePeak][res], eCapResMarBalancePeakStor[res])
+        end
+    end
+
     # Capacity Reserves Margin policy
     if CapacityReserveMargin > 0
         vP = EP[:vP]

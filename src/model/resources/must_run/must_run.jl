@@ -45,6 +45,18 @@ function must_run!(EP::Model, inputs::Dict, setup::Dict)
         add_similar_to_expression!(EP[:eCapResMarBalance], eCapResMarBalanceMustRun)
     end
 
+  # Capacity Reserves Margin peakload policy
+    if setup["CRM_peakload"] > 0
+        NCRM     = inputs["NCapacityReserveMargin"]
+        @expression(EP,
+            eCapResMarBalancePeakMustRun[res = 1:NCRM],
+            sum(derating_factor(gen[y], tag = res) * EP[:eTotalCap][y] for y in MUST_RUN))
+        for res in 1:NCRM
+            add_to_expression!(EP[:eCapResMarBalancePeak][res], eCapResMarBalancePeakMustRun[res])
+        end
+    end
+
+
     ### Constratints ###
 
     @constraint(EP,

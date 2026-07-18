@@ -45,6 +45,14 @@ function load_inputs(setup::Dict, path::AbstractString)
         end
     end
 
+    #crm peakload
+    if setup["CRM_peakload"] == 1
+        load_cap_reserve_margin_peakload!(setup, policies_path, inputs)
+        if inputs["Z"] > 1
+            load_cap_reserve_margin_peakload_trans!(setup, inputs, network_var)
+        end
+    end
+
     # Read in general configuration parameters for operational reserves (resource-specific reserve parameters are read in load_resources_data)
     if setup["OperationalReserves"] == 1
         load_operational_reserves!(setup, system_path, inputs)
