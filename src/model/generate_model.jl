@@ -108,7 +108,15 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         :eCapResMarBalancePeak,
         (inputs["NCapacityReserveMargin"]))
     end
-    
+
+    # Initialize CRM_multihours
+    if setup["CRM_multihours"] > 0
+        create_empty_expression!(EP,
+            :eCapResMarBalanceMultihour,
+            (inputs["NCapacityReserveMargin"], T))
+    end
+
+
     # Capacity Payment Expression
     if setup["CapacityPayment"] == 1
         create_empty_expression!(EP, :eCapPayment, inputs["G"])
@@ -277,11 +285,16 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         capacity_payment!(EP, inputs, setup)
     end 
 
-
     #CRM_peakload
     if setup["CRM_peakload"] > 0
         cap_reserve_margin_peakload!(EP, inputs, setup)
     end
+
+    #CRM_peakload
+    if setup["CRM_multihours"] > 0
+        cap_reserve_margin_multihours!(EP, inputs, setup)
+    end
+
 
     if (setup["MinCapReq"] == 1)
         minimum_capacity_requirement!(EP, inputs, setup)

@@ -11,6 +11,7 @@ function write_net_revenue(path::AbstractString,
         dfESRRev::DataFrame,
         dfResRevenue::DataFrame,
         dfResRevenue_peakload::DataFrame,
+        dfResRevenue_multihours:: DataFrame,
         dfChargingcost::DataFrame,
         dfPower::DataFrame,
         dfEnergyRevenue::DataFrame,
@@ -238,6 +239,12 @@ function write_net_revenue(path::AbstractString,
     dfNetRevenue.ReserveMarginRevenue_peakload = zeros(nrow(dfNetRevenue))
     if setup["CRM_peakload"] > 0 && has_duals(EP) # The unit is confirmed to be $
         dfNetRevenue.ReserveMarginRevenue_peakload = dfResRevenue_peakload[1:G, :AnnualSum]
+    end
+
+    # Add capacity revenue (multihours version) to the dataframe
+    dfNetRevenue.ReserveMarginRevenue_multihours = zeros(nrow(dfNetRevenue))
+    if setup["CRM_multihours"] > 0 && has_duals(EP) # The unit is confirmed to be $
+        dfNetRevenue.ReserveMarginRevenue_multihours = dfResRevenue_multihours[1:G, :AnnualSum]
     end
 
     # Add RPS/CES revenue to the dataframe

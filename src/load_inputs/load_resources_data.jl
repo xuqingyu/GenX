@@ -34,6 +34,7 @@ function _get_policyfile_info()
     esr_filenames = ["Resource_energy_share_requirement.csv"]
     cap_res_filenames = ["Resource_capacity_reserve_margin.csv"]
     crm_res_filenames = ["Resource_crm_peakload.csv"]
+    crm_multi_filenames = ["Resource_crm_multihours.csv"]
     min_cap_filenames = ["Resource_minimum_capacity_requirement.csv"]
     max_cap_filenames = ["Resource_maximum_capacity_requirement.csv"]
     h2_demand_filenames = ["Resource_hydrogen_demand.csv"]
@@ -47,6 +48,7 @@ function _get_policyfile_info()
         esr = (filenames = esr_filenames, setup_param = "EnergyShareRequirement"),
         cap_res = (filenames = cap_res_filenames, setup_param = "CapacityReserveMargin"),
         crm_res = (filenames = crm_res_filenames, setup_param = "CRM_peakload"),
+        crm_multi = (filenames = crm_multi_filenames, setup_param = "CRM_multihours"),
         min_cap = (filenames = min_cap_filenames, setup_param = "MinCapReq"),
         max_cap = (filenames = max_cap_filenames, setup_param = "MaxCapReq"),
         min_cf = (filenames = min_cf_filenames, setup_param = "MinCFReq"),

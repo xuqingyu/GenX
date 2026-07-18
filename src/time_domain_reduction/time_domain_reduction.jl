@@ -583,6 +583,179 @@ function update_deprecated_tdr_inputs!(setup::Dict{Any, Any})
     end
 end
 
+
+"""
+    get_resources_folder(mysetup)
+
+Return resources folder name in a way that is robust to slightly different
+GenX settings keys.
+"""
+function get_resources_folder(mysetup::Dict{Any, Any})
+    return get(mysetup, "ResourcesFolder", get(mysetup, "ResourceFolder", "resources"))
+end
+
+
+"""
+    representative_time_indices(M, TimestepsPerRepPeriod)
+
+Convert selected representative period indices into original raw time indices.
+
+Example:
+If TimestepsPerRepPeriod = 168 and M = [3, 10],
+then this returns:
+337:504 and 1513:1680.
+"""
+function representative_time_indices(M, TimestepsPerRepPeriod::Int)
+    idx = Int[]
+
+    for m in M
+        start_idx = (Int(m) - 1) * TimestepsPerRepPeriod + 1
+        end_idx = Int(m) * TimestepsPerRepPeriod
+        append!(idx, start_idx:end_idx)
+    end
+
+    return idx
+end
+
+
+"""
+    write_tdr_generators_variability_from_raw(raw_gvar_path, out_gvar_path, M, TimestepsPerRepPeriod)
+
+Write TDR Generators_variability.csv by directly extracting rows from the
+user-provided raw Generators_variability.csv.
+
+This preserves the original column structure, e.g.:
+
+Time_Index, Nuclear, Biomass, Thermal, shanxi_hydro_existing, ...
+
+instead of expanding shared profile tags such as Thermal into every individual
+thermal generator.
+"""
+function write_tdr_generators_variability_from_raw(
+        raw_gvar_path::String,
+        out_gvar_path::String,
+        M,
+        TimestepsPerRepPeriod::Int;
+        v::Bool = false)
+
+    raw_gv = load_dataframe(raw_gvar_path)
+
+    # Remove original Time_Index before extracting rows.
+    # A new TDR Time_Index will be inserted later.
+    if "Time_Index" in names(raw_gv)
+        select!(raw_gv, Not(:Time_Index))
+    end
+
+    row_idx = representative_time_indices(M, TimestepsPerRepPeriod)
+
+    if maximum(row_idx) > nrow(raw_gv)
+        error(
+            "TDR selected time index exceeds rows in raw Generators_variability.csv. " *
+            "maximum selected index = $(maximum(row_idx)), " *
+            "raw rows = $(nrow(raw_gv)). " *
+            "Please check TimestepsPerRepPeriod and raw variability length."
+        )
+    end
+
+    gv_out = raw_gv[row_idx, :]
+    insertcols!(gv_out, 1, :Time_Index => 1:nrow(gv_out))
+
+    if v
+        println("Writing Generators_variability.csv using raw shared-profile columns:")
+        println(names(gv_out))
+    end
+
+    CSV.write(out_gvar_path, gv_out)
+
+    return gv_out
+end
+
+"""
+    write_tdr_generators_variability_from_raw_multistage_concat(
+        inpath, mysetup, NumStages, out_gvar_path, M, TimestepsPerRepPeriod
+    )
+
+For MultiStageConcatenate = 1.
+
+Concatenate raw Generators_variability.csv files from all stages, then extract
+the representative periods selected by TDR.
+
+This preserves the original shared-profile column structure, e.g.:
+
+Time_Index, Nuclear, Biomass, Thermal, ...
+
+instead of expanding shared profiles into individual generator columns.
+"""
+function write_tdr_generators_variability_from_raw_multistage_concat(
+        inpath::String,
+        mysetup::Dict{Any, Any},
+        NumStages::Int,
+        out_gvar_path::String,
+        M,
+        TimestepsPerRepPeriod::Int;
+        v::Bool = false)
+
+    system_folder = mysetup["SystemFolder"]
+
+    raw_gv_all = DataFrame[]
+    base_cols = nothing
+
+    for per in 1:NumStages
+        raw_gvar_path = joinpath(
+            inpath,
+            "inputs",
+            "inputs_p$per",
+            system_folder,
+            "Generators_variability.csv"
+        )
+
+        raw_gv = load_dataframe(raw_gvar_path)
+
+        if "Time_Index" in names(raw_gv)
+            select!(raw_gv, Not(:Time_Index))
+        end
+
+        if base_cols === nothing
+            base_cols = names(raw_gv)
+        elseif names(raw_gv) != base_cols
+            error(
+                "Columns of Generators_variability.csv are inconsistent across stages. " *
+                "Stage 1 columns = $(base_cols), " *
+                "stage $per columns = $(names(raw_gv)). " *
+                "For MultiStageConcatenate = 1, all stages must use the same shared-profile columns."
+            )
+        end
+
+        push!(raw_gv_all, raw_gv)
+    end
+
+    raw_gv_concat = vcat(raw_gv_all...)
+
+    row_idx = representative_time_indices(M, TimestepsPerRepPeriod)
+
+    if maximum(row_idx) > nrow(raw_gv_concat)
+        error(
+            "TDR selected time index exceeds rows in concatenated raw Generators_variability.csv. " *
+            "maximum selected index = $(maximum(row_idx)), " *
+            "concatenated raw rows = $(nrow(raw_gv_concat)). " *
+            "Please check TimestepsPerRepPeriod, NumStages, and raw variability lengths."
+        )
+    end
+
+    gv_out = raw_gv_concat[row_idx, :]
+    insertcols!(gv_out, 1, :Time_Index => 1:nrow(gv_out))
+
+    if v
+        println("Writing MultiStage-concatenated Generators_variability.csv using raw shared-profile columns:")
+        println(names(gv_out))
+    end
+
+    CSV.write(out_gvar_path, gv_out)
+
+    return gv_out
+end
+
+
 @doc raw"""
     cluster_inputs(inpath, settings_path, mysetup, stage_id=-99, v=false; random=true)
 
@@ -1280,19 +1453,33 @@ function cluster_inputs(inpath,
                     demand_in)
 
                 ### TDR_Results/Generators_variability.csv
-                # Reset column ordering, add time index, and solve duplicate column name trouble with CSV.write's header kwarg
-                GVColMap = Dict(RESOURCE_ZONES[i] => RESOURCES[i]
-                for i in 1:length(inputs_dict[1]["RESOURCE_NAMES"]))
-                GVColMap["Time_Index"] = "Time_Index"
-                GVOutputData = GVOutputData[!, Symbol.(RESOURCE_ZONES)]
-                insertcols!(GVOutputData, 1, :Time_Index => 1:size(GVOutputData, 1))
-                NewGVColNames = [GVColMap[string(c)] for c in names(GVOutputData)]
+
+                # Preserve original shared-profile Generators_variability.csv columns.
+                # For MultiStageConcatenate = 1, TDR representative periods are selected from
+                # the concatenated raw time series across all stages.
+                out_gvar_path = joinpath(
+                    inpath,
+                    "inputs",
+                    Stage_Outfiles[per]["GVar"]
+                )
+
                 if v
-                    println("Writing resource file...")
+                    println("Writing resource file from concatenated raw Generators_variability.csv...")
                 end
-                CSV.write(joinpath(inpath, "inputs", Stage_Outfiles[per]["GVar"]),
-                    GVOutputData,
-                    header = NewGVColNames)
+
+                GVOutputData = write_tdr_generators_variability_from_raw_multistage_concat(
+                    inpath,
+                    mysetup,
+                    NumStages,
+                    out_gvar_path,
+                    M,
+                    TimestepsPerRepPeriod;
+                    v = v
+                )
+
+                # Keep this for the VRE-STOR block below.
+                # The following VRE-STOR logic uses NewGVColNames to identify solar/wind columns.
+                NewGVColNames = names(GVOutputData)
 
                 if !isempty(inputs_dict[per]["VRE_STOR"])
                     gen_var = load_dataframe(joinpath(inpath,
@@ -1411,19 +1598,35 @@ function cluster_inputs(inpath,
 
             ### TDR_Results/Generators_variability.csv
 
-            # Reset column ordering, add time index, and solve duplicate column name trouble with CSV.write's header kwarg
-            GVColMap = Dict(RESOURCE_ZONES[i] => RESOURCES[i]
-            for i in 1:length(myinputs["RESOURCE_NAMES"]))
-            GVColMap["Time_Index"] = "Time_Index"
-            GVOutputData = GVOutputData[!, Symbol.(RESOURCE_ZONES)]
-            insertcols!(GVOutputData, 1, :Time_Index => 1:size(GVOutputData, 1))
-            NewGVColNames = [GVColMap[string(c)] for c in names(GVOutputData)]
+            raw_gvar_path = joinpath(
+                inpath,
+                "inputs",
+                input_stage_directory,
+                mysetup["SystemFolder"],
+                "Generators_variability.csv"
+            )
+
+            out_gvar_path = joinpath(
+                inpath,
+                "inputs",
+                input_stage_directory,
+                GVar_Outfile
+            )
+
             if v
-                println("Writing resource file...")
+                println("Writing resource file from raw Generators_variability.csv...")
             end
-            CSV.write(joinpath(inpath, "inputs", input_stage_directory, GVar_Outfile),
-                GVOutputData,
-                header = NewGVColNames)
+
+            GVOutputData = write_tdr_generators_variability_from_raw(
+                raw_gvar_path,
+                out_gvar_path,
+                M,
+                TimestepsPerRepPeriod;
+                v = v
+            )
+
+            NewGVColNames = names(GVOutputData)
+
 
             # Break up VRE-storage components if needed
             if !isempty(myinputs["VRE_STOR"])
@@ -1547,16 +1750,30 @@ function cluster_inputs(inpath,
         ### TDR_Results/Generators_variability.csv
 
         # Reset column ordering, add time index, and solve duplicate column name trouble with CSV.write's header kwarg
-        GVColMap = Dict(RESOURCE_ZONES[i] => RESOURCES[i]
-        for i in 1:length(myinputs["RESOURCE_NAMES"]))
-        GVColMap["Time_Index"] = "Time_Index"
-        GVOutputData = GVOutputData[!, Symbol.(RESOURCE_ZONES)]
-        insertcols!(GVOutputData, 1, :Time_Index => 1:size(GVOutputData, 1))
-        NewGVColNames = [GVColMap[string(c)] for c in names(GVOutputData)]
+        ### TDR_Results/Generators_variability.csv
+
+        # Preserve original shared-profile Generators_variability.csv columns.
+        raw_gvar_path = joinpath(
+            inpath,
+            mysetup["SystemFolder"],
+            "Generators_variability.csv"
+        )
+
+        out_gvar_path = joinpath(inpath, GVar_Outfile)
+
         if v
-            println("Writing resource file...")
+            println("Writing resource file from raw Generators_variability.csv...")
         end
-        CSV.write(joinpath(inpath, GVar_Outfile), GVOutputData, header = NewGVColNames)
+
+        GVOutputData = write_tdr_generators_variability_from_raw(
+            raw_gvar_path,
+            out_gvar_path,
+            M,
+            TimestepsPerRepPeriod;
+            v = v
+        )
+
+        NewGVColNames = names(GVOutputData)
 
         # Break up VRE-storage components if needed
         if !isempty(myinputs["VRE_STOR"])
