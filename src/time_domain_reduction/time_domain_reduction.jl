@@ -488,9 +488,13 @@ function get_demand_multipliers(ClusterOutputData,
         NClusters,
         Ncols,
         v = false)
+    # Constant profiles are removed from InputData before clustering and added back
+    # to the output later. Only the remaining demand columns need multipliers.
+    scalable_demand_cols = intersect(DemandCols, propertynames(InputData))
+
     # Compute original zonal total demands
     zone_sums = Dict()
-    for demandcol in DemandCols
+    for demandcol in scalable_demand_cols
         zone_sums[demandcol] = sum(InputData[:, demandcol])
     end
 
@@ -501,16 +505,16 @@ function get_demand_multipliers(ClusterOutputData,
         for i in 1:Ncols
         if (Symbol(NewColNames[i]) in DemandCols)))
         cluster_zone_sums[m] = Dict()
-        for demandcol in DemandCols
+        for demandcol in scalable_demand_cols
             cluster_zone_sums[m][demandcol] = sum(clustered_lp_DF[:, demandcol])
         end
     end
 
     # Use representative period weights to compute total zonal demand of the representative profile
     # Determine multiplier to bridge the gap between original zonal demands and representative zonal demands
-    weighted_cluster_zone_sums = Dict(demandcol => 0.0 for demandcol in DemandCols)
+    weighted_cluster_zone_sums = Dict(demandcol => 0.0 for demandcol in scalable_demand_cols)
     demand_mults = Dict()
-    for demandcol in DemandCols
+    for demandcol in scalable_demand_cols
         for m in 1:NClusters
             weighted_cluster_zone_sums[demandcol] += (W[m] / (TimestepsPerRepPeriod)) *
                                                      cluster_zone_sums[m][demandcol]
@@ -530,10 +534,10 @@ function get_demand_multipliers(ClusterOutputData,
 
     # Zone-wise validation that scaled clustered demand equals original demand (Don't actually scale demand in this function)
     if v
-        new_zone_sums = Dict(demandcol => 0.0 for demandcol in DemandCols)
+        new_zone_sums = Dict(demandcol => 0.0 for demandcol in scalable_demand_cols)
         for m in 1:NClusters
             for i in 1:Ncols
-                if (NewColNames[i] in DemandCols)
+                if (NewColNames[i] in scalable_demand_cols)
                     # Uncomment this line if we decide to scale demand here instead of later. (Also remove "demand_mults[NewColNames[i]]*" term from new_zone_sums computation)
                     #ClusterOutputData[!,m][TimestepsPerRepPeriod*(i-1)+1 : TimestepsPerRepPeriod*i] *= demand_mults[NewColNames[i]]
                     println("   Scaling ",
@@ -551,7 +555,7 @@ function get_demand_multipliers(ClusterOutputData,
                 end
             end
         end
-        for demandcol in DemandCols
+        for demandcol in scalable_demand_cols
             println(demandcol,
                 ": ",
                 new_zone_sums[demandcol],

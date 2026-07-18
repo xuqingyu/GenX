@@ -8,7 +8,8 @@
 function configure_copt(solver_settings_path::String, optimizer::Type=COPT.Optimizer)
 
     solver_settings = YAML.load_file(solver_settings_path) |> x -> convert(Dict{String, Any}, x)
-    
+    solver_settings = rename_keys(solver_settings,
+        Dict("Pre_Solve" => "Presolve", "LPMethod" => "LpMethod"))
 
     valid_params = Set([
         "TimeLimit",   
