@@ -108,6 +108,11 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         :eCapResMarBalancePeak,
         (inputs["NCapacityReserveMargin"]))
     end
+    
+    # Capacity Payment Expression
+    if setup["CapacityPayment"] == 1
+        create_empty_expression!(EP, :eCapPayment, inputs["G"])
+    end
 
     # Energy Share Requirement
     if setup["EnergyShareRequirement"] >= 1
@@ -143,6 +148,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         create_empty_expression!(EP, :eMaxCapResSp, inputs["NumberOfSimpleMaxCapReqs"])
     end
 
+    if setup["MinCapReqSimple"] == 1
+        create_empty_expression!(EP, :eMinCapResSp, inputs["NumberOfSimpleMinCapReqs"])
+    end 
+  
     if setup["HydrogenMinimumProduction"] > 0
         create_empty_expression!(EP, :eH2DemandRes, inputs["NumberOfH2DemandReqs"])
     end
@@ -263,6 +272,12 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
         cap_reserve_margin!(EP, inputs, setup)
     end
 
+    #Capacity Payment
+    if setup["CapacityPayment"] == 1
+        capacity_payment!(EP, inputs, setup)
+    end 
+
+
     #CRM_peakload
     if setup["CRM_peakload"] > 0
         cap_reserve_margin_peakload!(EP, inputs, setup)
@@ -290,6 +305,10 @@ function generate_model(setup::Dict, inputs::Dict, OPTIMIZER::MOI.OptimizerWithA
 
     if setup["MaxCapReqSimple"] == 1
         maximum_capacity_requirement_simple!(EP, inputs, setup)
+    end
+
+    if setup["MinCapReqSimple"] == 1
+        minimum_capacity_requirement_simple!(EP, inputs, setup)
     end
 
     # Hydrogen demand limits

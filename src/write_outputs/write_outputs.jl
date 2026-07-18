@@ -589,7 +589,25 @@ function write_outputs(EP::Model, path::AbstractString, setup::Dict, inputs::Dic
             println("Time elapsed for writing simple maximum capacity requirement is")
             println(elapsed_time_max_cap_req_simple)
         end
+
+        if setup["MinCapReqSimple"] == 1 && has_duals(EP) == 1 &&
+           output_settings_d["WriteMinCapReqSimple"]
+            elapsed_time_min_cap_req_simple = @elapsed write_minimum_capacity_requirement_simple(path,
+                inputs,
+                setup,
+                EP)
+            println("Time elapsed for writing simple minimum capacity requirement is")
+            println(elapsed_time_min_cap_req_simple)
+        end 
         
+        # Capacity Payment Output
+        if setup["CapacityPayment"] == 1 && has_duals(EP) == 1
+            elapsed_time_cap_payment = @elapsed write_capacity_payment(EP,inputs, path, setup)
+            println("Time elapsed for writing capacity payment is")
+            println(elapsed_time_cap_payment)
+        end
+
+
         if setup["HydrogenMinimumProduction"] == 1 && has_duals(EP)
             if output_settings_d["WriteHydrogenPrices"]
                 elapsed_time_hydrogen_prices = @elapsed write_hydrogen_prices(path,

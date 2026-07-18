@@ -70,12 +70,20 @@ function load_inputs(setup::Dict, path::AbstractString)
         load_simple_maximum_capacity_requirement!(policies_path, inputs, setup)
     end
 
+    if setup["MinCapReqSimple"] == 1
+        load_simple_minimum_capacity_requirement!(policies_path, inputs, setup)
+    end
+
     if setup["EnergyShareRequirement"] == 1
         load_energy_share_requirement!(setup, policies_path, inputs)
     end
 
     if setup["CO2Cap"] >= 1
         load_co2_cap!(setup, policies_path, inputs)
+    end
+
+    if setup["CapacityPayment"] == 1
+        load_capacity_payment!(setup, path, inputs)
     end
 
     if !isempty(inputs["VRE_STOR"])

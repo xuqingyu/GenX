@@ -7,6 +7,7 @@ function default_settings()
         "EnergyShareRequirement" => 0,
         "CapacityReserveMargin" => 0,
         "CRM_peakload" => 0,
+        "CapacityPayment" => 0,
         "CO2Cap" => 0,
         "StorageLosses" => 1,
         "LDSAdditionalConstraints" => 1,
@@ -47,6 +48,7 @@ function default_settings()
         "MinUtilRate" => 0,
         "NarrowVariability" => 0,
         "MaxCapReqSimple" => 0,
+        "MinCapReqSimple" => 0,
         "MinCFReq" => 0)
 end
 
@@ -111,6 +113,7 @@ function default_writeoutput()
         "WriteCapacity" => true,
         "WriteCapacityValue" => true,
         "WriteCapacityFactor" => true,
+        "WriteCapacityPayment" => true,
         "WriteCharge" => true,
         "WriteChargingCost" => true,
         "WriteCO2" => true,
@@ -127,7 +130,8 @@ function default_writeoutput()
         "WriteHydrogenPrices" => true,
         "WriteMaintenance" => true,
         "WriteMaxCapReq" => true,
-        "WriteMaxCapReqSimple" => true,        
+        "WriteMaxCapReqSimple" => true,
+        "WriteMinCapReqSimple" => true,
         "WriteMinCapReq" => true,
         "WriteMinCFPrices" => true,
         "WriteMinCFRevenue" => true,

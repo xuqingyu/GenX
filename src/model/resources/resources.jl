@@ -801,6 +801,16 @@ function max_cap_simple(r::AbstractResource)
     get(r, Symbol("maxcapreqsp"), "Ulmt")
 end
 
+# Simple Policies
+function min_cap_simple(r::AbstractResource)
+    get(r, Symbol("mincapreqsp"), "Ulmt")
+end
+
+# Capacity payment Policies
+function capacity_payment(r::AbstractResource)
+    get(r, Symbol("capacity_sub_price"), 0.0)
+end
+
 # write_outputs
 region(r::AbstractResource) = r.region
 cluster(r::AbstractResource) = r.cluster
