@@ -493,18 +493,19 @@ function thermal_maintenance_capacity_reserve_margin_peakload_adjustment!(EP::Mo
         inputs::Dict)
     gen = inputs["RESOURCES"]
 
-    peak_hour_idx = inputs["peak_hour_idx"]    
+    peak_hour_idx = inputs["peak_hour_idx"]
     ncapres = inputs["NCapacityReserveMargin"]
     THERM_COMMIT = inputs["THERM_COMMIT"]
     MAINT = ids_with_maintenance(gen)
     applicable_resources = intersect(MAINT, THERM_COMMIT)
 
-    maint_adj = @expression(EP, [capres in 1:ncapres, peak_hour_idx],
-        sum(thermal_maintenance_capacity_reserve_margin_peakload_adjustment(EP,
-                inputs,
-                y,
-                capres) for y in applicable_resources))
-    add_similar_to_expression!(EP[:eCapResMarBalancePeak], maint_adj)
+    for capres in 1:ncapres
+        t_peak = peak_hour_idx[capres]
+        maint_adj = @expression(EP,
+            sum(thermal_maintenance_capacity_reserve_margin_peakload_adjustment(
+                    EP, inputs, y, capres, t_peak) for y in applicable_resources))
+        add_to_expression!(EP[:eCapResMarBalancePeak][capres], maint_adj)
+    end
 end
 
 function thermal_maintenance_capacity_reserve_margin_peakload_adjustment(EP::Model,
@@ -517,12 +518,13 @@ function thermal_maintenance_capacity_reserve_margin_peakload_adjustment(EP::Mod
     capresfactor = derating_factor(gen[y], tag = capres)
     cap = cap_size(gen[y])
     down_var = EP[Symbol(maintenance_down_name(resource_component))]
-    return -capresfactor * down_var["peak_hour_idx"] * cap
+    return -capresfactor * down_var[t] * cap
 end
 
 function thermal_maintenance_and_fusion_capacity_reserve_margin_peakload_adjustment(
-        EP, inputs, y, capres)
-    return thermal_maintenance_capacity_reserve_margin_peakload_adjustment(EP, inputs, y, capres, peak_hour_idx)
+        EP, inputs, y, capres, t)
+    return -thermal_maintenance_capacity_reserve_margin_peakload_adjustment(
+        EP, inputs, y, capres, t)
 end
 
 
