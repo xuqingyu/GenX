@@ -10,7 +10,7 @@ function storage_asymmetric!(EP::Model, inputs::Dict, setup::Dict)
 
     println("Storage Resources with Asmymetric Charge/Discharge Capacity Module")
 
-    OperationalReserves = setup["OperationalReserves"] == 1
+    OperationalReserves = setup["OperationalReserves"] > 0
     CapacityReserveMargin = setup["CapacityReserveMargin"] > 0
 
     T = inputs["T"]     # Number of time steps (hours)

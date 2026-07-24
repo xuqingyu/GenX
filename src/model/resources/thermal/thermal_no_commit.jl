@@ -82,7 +82,7 @@ function thermal_no_commit!(EP::Model, inputs::Dict, setup::Dict)
         end)
 
     ### Minimum and maximum power output constraints (Constraints #3-4)
-    if setup["OperationalReserves"] == 1
+    if setup["OperationalReserves"] > 0
         # If modeling with regulation and reserves, constraints are established by thermal_no_commit_operational_reserves() function below
         thermal_no_commit_operational_reserves!(EP, inputs)
     else

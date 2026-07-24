@@ -1,6 +1,6 @@
 ##########################################################################################################################################
 # The operational_reserves.jl module contains functions to creates decision variables related to frequency regulation and reserves provision
-# and constraints setting overall system requirements for regulation and operating reserves.
+# and constraints setting system-wide or zonal requirements for regulation and operating reserves.
 ##########################################################################################################################################
 
 @doc raw"""
@@ -11,12 +11,71 @@ This function sets up reserve decisions and constraints, using the operational_r
 function operational_reserves!(EP::Model, inputs::Dict, setup::Dict)
     UCommit = setup["UCommit"]
 
-    if inputs["pStatic_Contingency"] > 0 ||
+    static_contingency_active = setup["OperationalReserves"] == 2 ?
+                                any(inputs["pStatic_Contingency"] .> 0) :
+                                inputs["pStatic_Contingency"] > 0
+    if static_contingency_active ||
        (UCommit >= 1 && inputs["pDynamic_Contingency"] >= 1)
-        operational_reserves_contingency!(EP, inputs, setup)
+        if setup["OperationalReserves"] == 2
+            operational_reserves_zonal_contingency!(EP, inputs, setup)
+        else
+            operational_reserves_contingency!(EP, inputs, setup)
+        end
     end
 
     operational_reserves_core!(EP, inputs, setup)
+end
+
+"""Create an independent largest-contingency requirement for every model zone."""
+function operational_reserves_zonal_contingency!(EP::Model, inputs::Dict, setup::Dict)
+    println("Zonal Operational Reserves Contingency Module")
+
+    gen = inputs["RESOURCES"]
+    T = inputs["T"]
+    reserve_zones = inputs["OPERATIONAL_RESERVE_REGIONS"]
+    UCommit = setup["UCommit"]
+    COMMIT = inputs["COMMIT"]
+    transfer_lines = inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]
+    function contingency_resource_zones(z)
+        upstream_zones = [inputs["pTrans_Start_Zone"][l] for l in transfer_lines
+                          if inputs["pTrans_End_Zone"][l] == z]
+        unique([z; upstream_zones])
+    end
+    resource_region = inputs["OPERATIONAL_RESERVE_RESOURCE_REGION"]
+    commit_by_zone = if inputs["OPERATIONAL_RESERVE_CUSTOM_REGIONS"]
+        Dict(r => [y for y in COMMIT if resource_region[y] == r] for r in reserve_zones)
+    else
+        Dict(z => intersect(COMMIT,
+                reduce(union,
+                    (resources_in_zone_by_rid(gen, rz) for rz in contingency_resource_zones(z));
+                    init = Int[]))
+            for z in reserve_zones)
+    end
+    dynamic = UCommit >= 1 ? inputs["pDynamic_Contingency"] : 0
+
+    if UCommit == 1 && dynamic == 1
+        @variable(EP, vLARGEST_CONTINGENCY[z in reserve_zones] >= 0)
+        @variable(EP, vCONTINGENCY_AUX[y in COMMIT], Bin)
+        @expression(EP, eContingencyReq[z in reserve_zones, t = 1:T], vLARGEST_CONTINGENCY[z])
+        @constraint(EP, cContingency[z in reserve_zones, y in commit_by_zone[z]],
+            vLARGEST_CONTINGENCY[z] >= cap_size(gen[y]) * vCONTINGENCY_AUX[y])
+        @constraint(EP, cContAux1[y in COMMIT], vCONTINGENCY_AUX[y] <= EP[:eTotalCap][y])
+        @constraint(EP, cContAux2[y in COMMIT],
+            EP[:eTotalCap][y] <= inputs["pContingency_BigM"][y] * vCONTINGENCY_AUX[y])
+    elseif UCommit == 1 && dynamic == 2
+        @variable(EP, vLARGEST_CONTINGENCY[z in reserve_zones, t = 1:T] >= 0)
+        @variable(EP, vCONTINGENCY_AUX[y in COMMIT, t = 1:T], Bin)
+        @expression(EP, eContingencyReq[z in reserve_zones, t = 1:T], vLARGEST_CONTINGENCY[z, t])
+        @constraint(EP, cContingency[z in reserve_zones, y in commit_by_zone[z], t = 1:T],
+            vLARGEST_CONTINGENCY[z, t] >= cap_size(gen[y]) * vCONTINGENCY_AUX[y, t])
+        @constraint(EP, cContAux[y in COMMIT, t = 1:T],
+            vCONTINGENCY_AUX[y, t] <= EP[:vCOMMIT][y, t])
+        @constraint(EP, cContAux2[y in COMMIT, t = 1:T],
+            EP[:vCOMMIT][y, t] <= inputs["pContingency_BigM"][y] * vCONTINGENCY_AUX[y, t])
+    else
+        @expression(EP, eContingencyReq[z in reserve_zones, t = 1:T],
+            inputs["pStatic_Contingency"][z])
+    end
 end
 
 @doc raw"""
@@ -217,20 +276,40 @@ function operational_reserves_core!(EP::Model, inputs::Dict, setup::Dict)
     UCommit = setup["UCommit"]
 
     T = inputs["T"]     # Number of time steps (hours)
+    Z = inputs["Z"]
+    zonal_reserves = setup["OperationalReserves"] == 2
+    reserve_zones = inputs["OPERATIONAL_RESERVE_REGIONS"]
+    region_zones = inputs["OPERATIONAL_RESERVE_REGION_ZONES"]
+    custom_regions = zonal_reserves && inputs["OPERATIONAL_RESERVE_CUSTOM_REGIONS"]
 
     REG = inputs["REG"]
     RSV = inputs["RSV"]
     STOR_ALL = inputs["STOR_ALL"]
+    transfer_lines = inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]
 
     pDemand = inputs["pD"]
     pP_Max(y, t) = inputs["pP_Max"][y, t]
 
     systemwide_hourly_demand = sum(pDemand, dims = 2)
-    function must_run_vre_generation(t)
+    function must_run_vre_generation(t; zone = nothing)
+        eligible = intersect(inputs["VRE"], inputs["MUST_RUN"])
+        if !isnothing(zone)
+            eligible = [y for y in eligible if zone_id(gen[y]) == zone]
+        end
         sum(
             pP_Max(y, t) * EP[:eTotalCap][y]
-            for y in intersect(inputs["VRE"], inputs["MUST_RUN"]);
+            for y in eligible;
             init = 0)
+    end
+    function regional_requirement(r, t, demand_parameter, vre_parameter)
+        if custom_regions
+            return sum(demand_parameter[z] * pDemand[t, z] +
+                       vre_parameter[z] * must_run_vre_generation(t; zone = z)
+                for z in region_zones[r])
+        end
+        return demand_parameter[r] * sum(pDemand[t, z] for z in region_zones[r]) +
+               vre_parameter[r] * sum(must_run_vre_generation(t; zone = z)
+            for z in region_zones[r])
     end
 
     ### Variables ###
@@ -240,6 +319,8 @@ function operational_reserves_core!(EP::Model, inputs::Dict, setup::Dict)
     ## Decision variables for operational reserves
     @variable(EP, vREG[y in REG, t = 1:T]>=0) # Contribution to regulation (primary reserves), assumed to be symmetric (up & down directions equal)
     @variable(EP, vRSV[y in RSV, t = 1:T]>=0) # Contribution to operating reserves (secondary reserves or contingency reserves); only model upward reserve requirements
+    @variable(EP, vREG_TRANSFER[l in transfer_lines, t = 1:T] >= 0)
+    @variable(EP, vRSV_TRANSFER[l in transfer_lines, t = 1:T] >= 0)
 
     # Storage techs have two pairs of auxilary variables to reflect contributions to regulation and reserves
     # when charging and discharging (primary variable becomes equal to sum of these auxilary variables)
@@ -248,46 +329,71 @@ function operational_reserves_core!(EP::Model, inputs::Dict, setup::Dict)
     @variable(EP, vREG_charge[y in intersect(STOR_ALL, REG), t = 1:T]>=0) # Contribution to regulation (primary reserves) (mirrored variable used for storage devices)
     @variable(EP, vRSV_charge[y in intersect(STOR_ALL, RSV), t = 1:T]>=0) # Contribution to operating reserves (secondary reserves) (mirrored variable used for storage devices)
 
-    @variable(EP, vUNMET_RSV[t = 1:T]>=0) # Unmet operating reserves penalty/cost
+    if zonal_reserves
+        @variable(EP, vUNMET_RSV[z in reserve_zones, t = 1:T] >= 0)
+    else
+        @variable(EP, vUNMET_RSV[t = 1:T] >= 0)
+    end
 
     ### Expressions ###
     ## Total system reserve expressions
     # Regulation requirements as a percentage of demand and scheduled variable renewable energy production in each hour
     # Reg up and down requirements are symmetric
-    @expression(EP,
-        eRegReq[t = 1:T],
-        inputs["pReg_Req_Demand"] *
-        systemwide_hourly_demand[t]+
-        inputs["pReg_Req_VRE"] * must_run_vre_generation(t))
+    if zonal_reserves
+        @expression(EP, eRegReq[z in reserve_zones, t = 1:T],
+            regional_requirement(z, t,
+                custom_regions ? inputs["pReg_Req_Demand_By_Zone"] : inputs["pReg_Req_Demand"],
+                custom_regions ? inputs["pReg_Req_VRE_By_Zone"] : inputs["pReg_Req_VRE"]))
+    else
+        @expression(EP, eRegReq[t = 1:T],
+            inputs["pReg_Req_Demand"] * systemwide_hourly_demand[t] +
+            inputs["pReg_Req_VRE"] * must_run_vre_generation(t))
+    end
     # Operating reserve up / contingency reserve requirements as ˚a percentage of demand and scheduled variable renewable energy production in each hour
     # and the largest single contingency (generator or transmission line outage)
-    @expression(EP,
-        eRsvReq[t = 1:T],
-        inputs["pRsv_Req_Demand"] *
-        systemwide_hourly_demand[t]+
-        inputs["pRsv_Req_VRE"] * must_run_vre_generation(t))
+    if zonal_reserves
+        @expression(EP, eRsvReq[z in reserve_zones, t = 1:T],
+            regional_requirement(z, t,
+                custom_regions ? inputs["pRsv_Req_Demand_By_Zone"] : inputs["pRsv_Req_Demand"],
+                custom_regions ? inputs["pRsv_Req_VRE_By_Zone"] : inputs["pRsv_Req_VRE"]) +
+            (haskey(EP, :eContingencyReq) ? EP[:eContingencyReq][z, t] : 0))
+    else
+        @expression(EP, eRsvReq[t = 1:T],
+            inputs["pRsv_Req_Demand"] * systemwide_hourly_demand[t] +
+            inputs["pRsv_Req_VRE"] * must_run_vre_generation(t))
+    end
 
     # N-1 contingency requirement is considered only if Unit Commitment is being modeled
     if UCommit >= 1 &&
-       (inputs["pDynamic_Contingency"] >= 1 || inputs["pStatic_Contingency"] > 0)
-        add_similar_to_expression!(EP[:eRsvReq], EP[:eContingencyReq])
+       (inputs["pDynamic_Contingency"] >= 1 ||
+        (zonal_reserves ? any(inputs["pStatic_Contingency"] .> 0) :
+         inputs["pStatic_Contingency"] > 0))
+        if !zonal_reserves
+            add_similar_to_expression!(EP[:eRsvReq], EP[:eContingencyReq])
+        end
     end
 
     ## Objective Function Expressions ##
 
     # Penalty for unmet operating reserves
-    @expression(EP,
-        eCRsvPen[t = 1:T],
-        inputs["omega"][t]*inputs["pC_Rsv_Penalty"]*vUNMET_RSV[t])
+    if zonal_reserves
+        @expression(EP, eCRsvPen[t = 1:T],
+            inputs["omega"][t] *
+            sum(inputs["pC_Rsv_Penalty"][z] * vUNMET_RSV[z, t]
+                for z in reserve_zones))
+    else
+        @expression(EP, eCRsvPen[t = 1:T],
+            inputs["omega"][t] * inputs["pC_Rsv_Penalty"] * vUNMET_RSV[t])
+    end
     @expression(EP,
         eTotalCRsvPen,
         sum(eCRsvPen[t] for t in 1:T)+
-        sum(reg_cost(gen[y]) * vRSV[y, t] for y in RSV, t in 1:T)+
-        sum(rsv_cost(gen[y]) * vREG[y, t] for y in REG, t in 1:T))
+        sum(reg_cost(gen[y]) * vREG[y, t] for y in REG, t in 1:T)+
+        sum(rsv_cost(gen[y]) * vRSV[y, t] for y in RSV, t in 1:T))
     add_to_expression!(EP[:eObj], eTotalCRsvPen)
 end
 
-function operational_reserves_constraints!(EP, inputs)
+function operational_reserves_constraints!(EP, inputs, setup)
     T = inputs["T"]     # Number of time steps (hours)
 
     REG = inputs["REG"]
@@ -298,20 +404,86 @@ function operational_reserves_constraints!(EP, inputs)
     eRegulationRequirement = EP[:eRegReq]
     eReserveRequirement = EP[:eRsvReq]
 
+    if setup["OperationalReserves"] == 2
+        reserve_zones = inputs["OPERATIONAL_RESERVE_REGIONS"]
+        transfer_lines = inputs["OPERATIONAL_RESERVE_TRANSFER_LINES"]
+        gen = inputs["RESOURCES"]
+        resource_region = inputs["OPERATIONAL_RESERVE_RESOURCE_REGION"]
+        region_zones = inputs["OPERATIONAL_RESERVE_REGION_ZONES"]
+        custom_regions = inputs["OPERATIONAL_RESERVE_CUSTOM_REGIONS"]
+        is_local(y, r) = !custom_regions || zone_id(gen[y]) in region_zones[r]
+        reg_by_zone = Dict(z => [y for y in REG
+                                if resource_region[y] == z && is_local(y, z)]
+            for z in reserve_zones)
+        rsv_by_zone = Dict(z => [y for y in RSV
+                                if resource_region[y] == z && is_local(y, z)]
+            for z in reserve_zones)
+        transfer_region = inputs["OPERATIONAL_RESERVE_TRANSFER_REGION"]
+        incoming_lines = Dict(z => [l for l in transfer_lines
+                                    if transfer_region[l] == z]
+            for z in reserve_zones)
+        transfer_delivery(l) = setup["Trans_Loss_Segments"] == 1 ?
+                               1 - inputs["pPercent_Loss"][l] : 1.0
+        @constraint(EP, cReg[z in reserve_zones, t = 1:T],
+            sum(vREG[y, t] for y in reg_by_zone[z]) +
+            sum(transfer_delivery(l) * EP[:vREG_TRANSFER][l, t]
+                for l in incoming_lines[z]) >= eRegulationRequirement[z, t])
+        @constraint(EP, cRsvReq[z in reserve_zones, t = 1:T],
+            sum(vRSV[y, t] for y in rsv_by_zone[z]) +
+            sum(transfer_delivery(l) * EP[:vRSV_TRANSFER][l, t]
+                for l in incoming_lines[z]) + vUNMET_RSV[z, t] >=
+            eReserveRequirement[z, t])
+        if !isempty(transfer_lines)
+            if custom_regions
+                supply_keys = unique([(inputs["pTrans_Start_Zone"][l], transfer_region[l])
+                                      for l in transfer_lines])
+                inputs["OPERATIONAL_RESERVE_SUPPLY_KEYS"] = supply_keys
+                outgoing_lines = Dict(k => [l for l in transfer_lines
+                                            if inputs["pTrans_Start_Zone"][l] == k[1] &&
+                                               transfer_region[l] == k[2]]
+                    for k in supply_keys)
+                @constraint(EP, cRegTransferSupply[k in supply_keys, t = 1:T],
+                    sum(EP[:vREG_TRANSFER][l, t] for l in outgoing_lines[k]) ==
+                    sum(vREG[y, t] for y in REG
+                        if zone_id(gen[y]) == k[1] && resource_region[y] == k[2]))
+                @constraint(EP, cRsvTransferSupply[k in supply_keys, t = 1:T],
+                    sum(EP[:vRSV_TRANSFER][l, t] for l in outgoing_lines[k]) ==
+                    sum(vRSV[y, t] for y in RSV
+                        if zone_id(gen[y]) == k[1] && resource_region[y] == k[2]))
+            else
+                supply_zones = unique(inputs["pTrans_Start_Zone"][transfer_lines])
+                outgoing_lines = Dict(z => [l for l in transfer_lines
+                                            if inputs["pTrans_Start_Zone"][l] == z]
+                    for z in supply_zones)
+                @constraint(EP, cRegTransferSupply[z in supply_zones, t = 1:T],
+                    sum(EP[:vREG_TRANSFER][l, t] for l in outgoing_lines[z]) ==
+                    sum(vREG[y, t] for y in intersect(REG,
+                        resources_in_zone_by_rid(gen, z))))
+                @constraint(EP, cRsvTransferSupply[z in supply_zones, t = 1:T],
+                    sum(EP[:vRSV_TRANSFER][l, t] for l in outgoing_lines[z]) ==
+                    sum(vRSV[y, t] for y in intersect(RSV,
+                        resources_in_zone_by_rid(gen, z))))
+            end
+            @constraint(EP, cReserveTransferHeadroom[l in transfer_lines, t = 1:T],
+                EP[:vFLOW][l, t] + EP[:vREG_TRANSFER][l, t] +
+                EP[:vRSV_TRANSFER][l, t] <= EP[:eAvail_Trans_Cap][l])
+            @constraint(EP, cRegTransferFootroom[l in transfer_lines, t = 1:T],
+                EP[:vFLOW][l, t] - EP[:vREG_TRANSFER][l, t] >=
+                -EP[:eAvail_Trans_Cap][l])
+        end
+        return
+    end
+
     ## Total system reserve constraints
     # Regulation requirements as a percentage of demand and scheduled
     # variable renewable energy production in each hour.
     # Note: frequency regulation up and down requirements are symmetric and all resources
     # contributing to regulation are assumed to contribute equal capacity to both up
     # and down directions
-    if !isempty(REG)
-        @constraint(EP,
-            cReg[t = 1:T],
-            sum(vREG[y, t] for y in REG)>=eRegulationRequirement[t])
-    end
-    if !isempty(RSV)
-        @constraint(EP,
-            cRsvReq[t = 1:T],
-            sum(vRSV[y, t] for y in RSV) + vUNMET_RSV[t]>=eReserveRequirement[t])
-    end
+    @constraint(EP,
+        cReg[t = 1:T],
+        sum(vREG[y, t] for y in REG; init = 0)>=eRegulationRequirement[t])
+    @constraint(EP,
+        cRsvReq[t = 1:T],
+        sum(vRSV[y, t] for y in RSV; init = 0) + vUNMET_RSV[t]>=eReserveRequirement[t])
 end

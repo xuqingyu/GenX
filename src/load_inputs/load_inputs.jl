@@ -53,8 +53,16 @@ function load_inputs(setup::Dict, path::AbstractString)
         end
     end
 
+    #crm multihours
+    if setup["CRM_multihours"] == 1
+        load_cap_reserve_margin_multihours!(setup, policies_path, inputs)
+        if inputs["Z"] > 1
+            load_cap_reserve_margin_multihours_trans!(setup, inputs, network_var)
+        end
+    end
+
     # Read in general configuration parameters for operational reserves (resource-specific reserve parameters are read in load_resources_data)
-    if setup["OperationalReserves"] == 1
+    if setup["OperationalReserves"] > 0
         load_operational_reserves!(setup, system_path, inputs)
     end
 

@@ -36,36 +36,44 @@ function full_time_series_reconstruction(
     # Calculate the number of total periods the original time series was split into (will usually be 52)
     numPeriods = floor(Int, WeightTotal / TimestepsPerRepPeriod)
 
-    # Get a matrix of the input DataFrame
-    DFMatrix = Matrix(DF)
-    # Initialize an array to add the reconstructed data to
-    recon = ["t$t" for t in 1:(TimestepsPerRepPeriod * numPeriods)]
-
     # Find the index of the row with the first time step
     t1 = findfirst(x -> x == "t1", DF[!, 1])
+    isnothing(t1) && error("Unable to reconstruct full time series: input has no t1 row.")
 
-    # Reconstruction of all hours of the year from TDR
-    for j in range(2, ncol(DF))
-        col = DF[t1:end, j]
-        recon_col = []
-        for i in range(1, numPeriods)
-            index = Period_map[i, "Rep_Period_Index"]
-            recon_temp = col[(TimestepsPerRepPeriod * index - (TimestepsPerRepPeriod - 1)):(TimestepsPerRepPeriod * index)]
-            recon_col = [recon_col; recon_temp]
-        end
-        recon = [recon recon_col]
-    end
-    reconDF = DataFrame(recon, :auto)
-
-    # Insert rows that were above "t1" in the original DataFrame (e.g. "Zone" and "AnnualSum") if present
-    for i in range(1, t1 - 1)
-        insert!(reconDF, i, DFMatrix[i, 1:end], promote = true)
+    if nrow(Period_map) < numPeriods
+        error("Period_map.csv contains $(nrow(Period_map)) periods, but $numPeriods are required.")
     end
 
-    # Repeat the last rows of the year to fill in the gap (should be 24 hours for non-leap year)
-    end_diff = WeightTotal - nrow(reconDF) + 1
-    new_rows = reconDF[(nrow(reconDF) - end_diff):nrow(reconDF), 1:end]
-    new_rows[!, 1] = ["t$t" for t in (WeightTotal - end_diff):WeightTotal]
-    reconDF = [reconDF; new_rows]
-    return reconDF
+    # Build the source-hour lookup once, then reconstruct every output column in
+    # one indexed copy. The previous column-by-column hcat repeatedly copied the
+    # full accumulated matrix and scaled quadratically with the resource count.
+    source_hours = Vector{Int}(undef, TimestepsPerRepPeriod * numPeriods)
+    for period in 1:numPeriods
+        rep_period = Period_map[period, "Rep_Period_Index"]
+        source_start = (rep_period - 1) * TimestepsPerRepPeriod + 1
+        output_start = (period - 1) * TimestepsPerRepPeriod + 1
+        source_hours[output_start:(output_start + TimestepsPerRepPeriod - 1)] .=
+            source_start:(source_start + TimestepsPerRepPeriod - 1)
+    end
+
+    # Weekly TDR covers 8,736 hours. Repeat the final reconstructed hours to fill
+    # the remaining 24 hours of a non-leap year, matching the documented behavior.
+    remaining_hours = WeightTotal - length(source_hours)
+    remaining_hours < 0 && error("WeightTotal is shorter than the reconstructed periods.")
+    remaining_hours > length(source_hours) &&
+        error("Cannot fill $remaining_hours trailing hours from the reconstructed series.")
+    if remaining_hours > 0
+        append!(source_hours, source_hours[(end - remaining_hours + 1):end])
+    end
+
+    metadata_rows = t1 - 1
+    reconstructed = Matrix{Any}(undef, metadata_rows + WeightTotal, ncol(DF))
+    if metadata_rows > 0
+        reconstructed[1:metadata_rows, :] .= Matrix(DF[1:metadata_rows, :])
+    end
+    reconstructed[(metadata_rows + 1):end, 1] .= ["t$t" for t in 1:WeightTotal]
+    reconstructed[(metadata_rows + 1):end, 2:end] .=
+        Matrix(DF[t1 .+ source_hours .- 1, 2:end])
+
+    return DataFrame(reconstructed, :auto)
 end

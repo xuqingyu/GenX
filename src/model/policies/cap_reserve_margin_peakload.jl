@@ -24,7 +24,6 @@ function cap_reserve_margin_peakload!(EP::Model, inputs::Dict, setup::Dict)
         add_to_expression!(EP[:eObj], eCTotalCapResSlack)
     end
 
-
         @constraint(EP,
                 cCapacityResMargin[res = 1:NCRM],
                 EP[:eCapResMarBalancePeak][res]

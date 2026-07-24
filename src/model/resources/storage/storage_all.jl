@@ -198,7 +198,7 @@ function storage_all_operation!(EP::Model, inputs::Dict, setup::Dict)
     T = inputs["T"]
     p = inputs["hours_per_subperiod"]
     CapacityReserveMargin = setup["CapacityReserveMargin"] > 0
-    OperationalReserves = setup["OperationalReserves"] == 1
+    OperationalReserves = setup["OperationalReserves"] > 0
 
     STOR_ALL = inputs["STOR_ALL"]
 

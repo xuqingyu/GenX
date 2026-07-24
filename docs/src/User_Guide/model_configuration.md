@@ -21,7 +21,8 @@ The following tables summarize the model settings parameters and their default/p
 ||2 = unit commitment with linearized clustering.|
 |OperationalReserves | Flag for modeling operational reserves .|
 ||0 = No operational reserves considered. |
-||1 = Consider regulation (primary) and spinning (secondary) reserves. |
+||1 = Consider regulation (primary) and spinning (secondary) reserves with one system-wide requirement. |
+||2 = Consider regulation and spinning reserves with separate requirements for user-defined reserve regions. Regions may be individual zones or collections of zones; eligible resources are assigned in `Resource_operational_reserve.csv`. The legacy one-region-per-zone format remains supported. |
 |StorageLosses | Flag to account for storage related losses.|
 ||0 = VRE and CO2 constraints DO NOT account for energy lost. |
 ||1 = constraints account for energy lost. |

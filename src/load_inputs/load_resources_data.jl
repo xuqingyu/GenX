@@ -34,6 +34,7 @@ function _get_policyfile_info()
     esr_filenames = ["Resource_energy_share_requirement.csv"]
     cap_res_filenames = ["Resource_capacity_reserve_margin.csv"]
     crm_res_filenames = ["Resource_crm_peakload.csv"]
+    crm_multi_filenames = ["Resource_crm_multihours.csv"]
     min_cap_filenames = ["Resource_minimum_capacity_requirement.csv"]
     max_cap_filenames = ["Resource_maximum_capacity_requirement.csv"]
     h2_demand_filenames = ["Resource_hydrogen_demand.csv"]
@@ -47,6 +48,7 @@ function _get_policyfile_info()
         esr = (filenames = esr_filenames, setup_param = "EnergyShareRequirement"),
         cap_res = (filenames = cap_res_filenames, setup_param = "CapacityReserveMargin"),
         crm_res = (filenames = crm_res_filenames, setup_param = "CRM_peakload"),
+        crm_multi = (filenames = crm_multi_filenames, setup_param = "CRM_multihours"),
         min_cap = (filenames = min_cap_filenames, setup_param = "MinCapReq"),
         max_cap = (filenames = max_cap_filenames, setup_param = "MaxCapReq"),
         min_cf = (filenames = min_cf_filenames, setup_param = "MinCFReq"),
@@ -61,6 +63,8 @@ function _get_policyfile_info()
     )
     return policyfile_info
 end
+
+const OPERATIONAL_RESERVE_ASSIGNMENT_FILE = "Resource_operational_reserve.csv"
 
 """
     _get_summary_map()
@@ -749,7 +753,7 @@ function validate_policy_dataframe!(filename::AbstractString, policy_in::DataFra
     cols = lowercase.(names(policy_in))
     filter!(col -> col ≠ "resource", cols)
 
-    accepted_cols = ["derating_factor", "esr", "esr_vrestor",
+    accepted_cols = ["derating_factor", "esr", "esr_vrestor", "reserve_region",
         "h2_demand", "qualified_supply",
         "min_cf","min_gf_num","min_gf_den","min_ur",
         [string(cap, type) for cap in ["min_cap", "max_cap"]
@@ -860,6 +864,14 @@ function add_policies_to_resources!(resources::Vector{<:AbstractResource},
                 @info filename * " Successfully Read."
             end
         end
+    end
+    reserve_assignment_path =
+        joinpath(resource_policy_path, OPERATIONAL_RESERVE_ASSIGNMENT_FILE)
+    if isfile(reserve_assignment_path)
+        add_policy_to_resources!(resources,
+            reserve_assignment_path,
+            OPERATIONAL_RESERVE_ASSIGNMENT_FILE)
+        @info OPERATIONAL_RESERVE_ASSIGNMENT_FILE * " Successfully Read."
     end
     return nothing
 end

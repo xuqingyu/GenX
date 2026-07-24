@@ -2,7 +2,7 @@ module TestTDR
 
 import GenX
 import Test
-import JLD2, Clustering
+import JLD2, Clustering, DataFrames
 
 include(joinpath(@__DIR__, "utilities.jl"))
 
@@ -61,5 +61,20 @@ Test.@test round(I, digits = 1) == 1      # Mutual information should be equal t
 for file in filter(endswith(".csv"), readdir(TDR_Results_true))
     Test.@test cmp_csv(joinpath(TDR_Results_test, file), joinpath(TDR_Results_true, file))
 end
+
+# Constant demand profiles are removed before clustering and must not be used
+# when calculating multipliers for the remaining profiles.
+cluster_output = DataFrames.DataFrame(Symbol("1") => [1.0, 2.0, 1.0, 1.0])
+input_data = DataFrames.DataFrame(Demand_MW_z1 = [1.0, 2.0, 1.0, 2.0])
+demand_mults = GenX.get_demand_multipliers(cluster_output,
+    input_data,
+    [1],
+    [2.0],
+    [:Demand_MW_z1, :Demand_MW_z2],
+    2,
+    [:Demand_MW_z1, :GrpWeight],
+    1,
+    2)
+Test.@test demand_mults == Dict(:Demand_MW_z1 => 2.0)
 
 end # module TestTDR
