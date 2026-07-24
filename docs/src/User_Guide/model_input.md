@@ -706,24 +706,28 @@ This file contains the time-series of capacity factors / availability of the win
 
 This file includes parameter inputs needed to model time-dependent procurement of regulation and spinning reserves. This file is needed if `OperationalReserves` flag is activated in the YAML file `genx_settings.yml`.
 
-For system-wide reserves (`OperationalReserves = 1`), the file uses its first data row and the `Zone` column is optional. For zonal reserves (`OperationalReserves = 2`), the `Zone` column is required and each row defines one zone that receives local regulation and spinning-reserve constraints. Zones omitted from the file receive no operational-reserve constraint. This allows generation-only nodes, such as remote generation hubs, to remain outside the reserve regions without relying on hard-coded zone numbers.
+For system-wide reserves (`OperationalReserves = 1`), the file uses its first data row and the `Zone` column is optional. With `OperationalReserves = 2`, the legacy format uses `Zone` and creates one reserve region per listed model zone. Alternatively, the custom-region format uses `Reserve_Region` and `Zones`. The recommended layout has one row per physical zone; `Reserve_Region` may repeat for zones that share reserves. Demand and VRE requirements are calculated using each zone's own percentages and then summed within the reserve region. For backward compatibility, one row may contain a semicolon-separated zone list such as `"1;2;3"`; those zones then share the percentages on that row. Reserve-region identifiers must be consecutive integers beginning at 1.
 
-In zonal mode, a line in `Network.csv` is treated as an operational-reserve delivery path when its `Start_Zone` is omitted from `Operational_reserves.csv` and its `End_Zone` is listed. Reserve-capable resources at the start zone may then supply the end zone through that line. Exported reserves share the start zone's available reserve provision, are limited by the line capacity remaining after scheduled power flow, and are derated by the line-loss percentage when linear transmission losses are used. This prevents a remote resource or transmission path from being counted more than once.
+The custom-region format requires `resources/policy_assignments/Resource_operational_reserve.csv`. Its first column is `Resource`; the remaining binary columns are `Reserve_Region_1`, `Reserve_Region_2`, and so on. A reserve-capable resource must belong to exactly one region and cannot be counted in multiple regions. Resource assignment is independent of the resource's physical model zone, so a remote generation base can be assigned directly to its receiving reserve region.
+
+In the legacy zonal format, a line in `Network.csv` is treated as an operational-reserve delivery path when its `Start_Zone` is omitted from `Operational_reserves.csv` and its `End_Zone` is listed. In the custom-region format, a resource located outside its assigned region must have a direct `Network.csv` line from its physical zone to one of the region's `Zones`. GenX automatically routes that resource's reserve contribution through the matching line. Delivered reserves are reduced by modeled line losses and share the line capacity remaining after scheduled power flow; a missing direct line raises an input error. Each reserve region is otherwise treated as a copper plate, and multi-hop reserve delivery is not inferred.
 
 ###### Table 22: Structure of the Operational_reserves.csv file
 ---
 |**Column Name** | **Description**|
 | :------------ | :-----------|
-|Zone |Required for `OperationalReserves = 2`. Model-zone number receiving a local operational-reserve constraint. Each zone may appear at most once.|
-|Reg\_Req\_Percent\_Demand |[0,1], Regulation requirement as a percent of time-dependent demand. Demand is summed across all zones for `OperationalReserves = 1` and evaluated separately in each zone for `OperationalReserves = 2`.|
-|Reg\_Req\_Percent\_VRE |[0,1], Regulation requirement as a percent of time-dependent wind and solar generation (system-wide for mode 1 and zonal for mode 2).|
-|Rsv\_Req\_Percent\_Demand [0,1], |Spinning up or contingency reserve requirement as a percent of time-dependent demand (system-wide for mode 1 and zonal for mode 2).|
-|Rsv\_Req\_Percent\_VRE |[0,1], Spinning up or contingency reserve requirement as a percent of time-dependent wind and solar generation (system-wide for mode 1 and zonal for mode 2).|
-|Unmet\_Rsv\_Penalty\_Dollar\_per\_MW |Penalty for not meeting time-dependent spinning reserve requirement (USD/MW per time step).|
+|Zone |Required for the legacy `OperationalReserves = 2` format. Model-zone number receiving a local operational-reserve constraint. Each zone may appear at most once.|
+|Reserve\_Region |Required for the custom-region format. Consecutive region number beginning at 1.|
+|Zones |Required for the custom-region format. Physical model zone receiving the row's requirement percentages. A semicolon-separated list remains supported when multiple zones share identical percentages.|
+|Reg\_Req\_Percent\_Demand |[0,1], Regulation requirement as a percent of time-dependent demand. In custom-region mode it is applied to the row's zone before zone requirements are summed by reserve region.|
+|Reg\_Req\_Percent\_VRE |[0,1], Regulation requirement as a percent of time-dependent wind and solar generation. In custom-region mode it is applied separately to the row's zone.|
+|Rsv\_Req\_Percent\_Demand [0,1], |Spinning or contingency reserve requirement as a percent of the row's zone demand before regional aggregation.|
+|Rsv\_Req\_Percent\_VRE |[0,1], Spinning or contingency reserve requirement as a percent of the row's zone wind and solar generation before regional aggregation.|
+|Unmet\_Rsv\_Penalty\_Dollar\_per\_MW |Regional penalty for unmet spinning reserve (USD/MW per time step); it must be identical for all rows in one reserve region.|
 |Dynamic\_Contingency |Flags to include capacity (generation or transmission) contingency to be added to the spinning reserve requirement. In zonal mode this flag must have the same value in every row.|
 |Dynamic\_Contingency |= 1: contingency set to be equal to largest installed thermal unit (only applied when `UCommit = 1`).|
 ||= 2: contingency set to be equal to largest committed thermal unit each time period (only applied when `UCommit = 1`).|
-|Static\_Contingency\_MW |A fixed static contingency in MW added to the reserve requirement. In zonal mode this value applies to the zone identified by that row. Applied when `UCommit = 1` and `DynamicContingency = 0`, or when `UCommit = 2`. Contingency term is omitted when this value is 0 and dynamic contingency is inactive.|
+|Static\_Contingency\_MW |A regional fixed contingency in MW added once to the regional requirement. It must be identical for all rows in one reserve region and is not summed across zones.|
 
 
 
